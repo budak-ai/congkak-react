@@ -5,6 +5,7 @@ import House from './House';
 import Cursor from './Cursor';
 import Row from './Row';
 import InfoModal from './InfoModal';
+import DebugPanel from './DebugPanel';
 import { handleWrongSelection } from '../utils/animation';
 import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
 import config from '../config/config';
@@ -95,6 +96,31 @@ const CongkakBoard = () => {
 
   const toggleModal = () => {
     setModalOpen(!isModalOpen);
+  };
+
+  // Debug panel handler for applying test scenarios
+  const handleApplyScenario = (scenario) => {
+    setSeeds([...scenario.seeds]);
+    setTopHouseSeeds(scenario.topHouseSeeds);
+    setLowHouseSeeds(scenario.lowHouseSeeds);
+
+    if (scenario.startingPositionUpper !== undefined) {
+      setStartingPositionUpper(scenario.startingPositionUpper);
+      setCurrentHoleIndexUpper(scenario.startingPositionUpper);
+    }
+    if (scenario.startingPositionLower !== undefined) {
+      setStartingPositionLower(scenario.startingPositionLower);
+      setCurrentHoleIndexLower(scenario.startingPositionLower);
+    }
+
+    // Reset game state
+    setGamePhase(STARTING_PHASE);
+    setIsGameOver(false);
+    setOutcomeMessage('');
+    setCurrentTurn(null);
+    setIsSowingUpper(false);
+    setIsSowingLower(false);
+    setResetCursor(!resetCursor);
   };
 
   // Define the handlers for the mobile buttons
@@ -921,6 +947,12 @@ const CongkakBoard = () => {
         © 2023 <a href="https://twitter.com/ayuinmetaverse" target="_blank">AYU</a>. All Rights Reserved.
       </div>
       <Analytics/>
+      <DebugPanel
+        onApplyScenario={handleApplyScenario}
+        currentSeeds={seeds}
+        topHouseSeeds={topHouseSeeds}
+        lowHouseSeeds={lowHouseSeeds}
+      />
     </div>
   );
 };
