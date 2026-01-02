@@ -1,0 +1,67 @@
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.settings-content {
+  background-color: #EBEBD0;
+  color: #333;
+  border-radius: 10px;
+  padding: 2rem;
+  min-width: 300px;
+  max-width: 90vw;
+}
+
+.settings-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.settings-label {
+  font-weight: bold;
+}
+
+.settings-toggle {
+  padding: 0.5rem 1rem;
+  background-color: #4d6a2b;
+  color: #EBEBD0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settings-toggle:hover {
+  background-color: #5d7a3b;
+}
+
+.settings-close {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #575452;
+  color: #EBEBD0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.settings-close:hover {
+  background-color: #676562;
+}

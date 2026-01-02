@@ -7,6 +7,9 @@ import Row from './Row';
 import InfoModal from './InfoModal';
 import DebugPanel from './DebugPanel';
 import Countdown from './Countdown';
+import LanguageSelector from './LanguageSelector';
+import { useLanguage } from '../context/LanguageContext';
+import { t } from '../config/translations';
 import { handleWrongSelection } from '../utils/animation';
 import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
 import { validateSeedCount } from '../utils/seedValidator';
@@ -39,7 +42,8 @@ const {
   TURN_BASED_SOWING
 } = gamePhaseConfig;
 
-const CongkakBoard = () => {
+const CongkakBoard = ({ onMenuOpen }) => {
+  const { language } = useLanguage();
 
   const [seeds, setSeeds] = useState(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT)); // 14 holes excluding houses
   
@@ -291,22 +295,27 @@ const CongkakBoard = () => {
   *                    Cursor visibility
   * ==========================================================*/
   useEffect(() => {
+    // Both cursors visible during freeplay/countdown and old simultaneous phases
+    const bothPlayersActive = gamePhase === COUNTDOWN || gamePhase === FREEPLAY ||
+      gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT ||
+      gamePhase === SIMULTANEOUS_SELECT_UPPER || gamePhase === SIMULTANEOUS_SELECT_LOWER;
+
     // for upper player
-    if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_UPPER || gamePhase === SIMULTANEOUS_SELECT_LOWER) {
+    if (bothPlayersActive) {
       setCursorVisibilityUpper({ visible: true });
     } else {
-      if (currentTurn === PLAYER_UPPER) setCursorVisibilityUpper({ visible:true });
+      if (currentTurn === PLAYER_UPPER) setCursorVisibilityUpper({ visible: true });
       else setCursorVisibilityUpper({ visible: false });
     }
 
     // for lower player
-    if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_UPPER || gamePhase === SIMULTANEOUS_SELECT_LOWER) {
+    if (bothPlayersActive) {
       setCursorVisibilityLower({ visible: true });
     } else {
-      if (currentTurn === PLAYER_LOWER) setCursorVisibilityLower({ visible:true });
+      if (currentTurn === PLAYER_LOWER) setCursorVisibilityLower({ visible: true });
       else setCursorVisibilityLower({ visible: false });
     }
-  },[gamePhase, currentTurn]);
+  }, [gamePhase, currentTurn]);
 
 
   /**=========================================================
@@ -596,24 +605,36 @@ const CongkakBoard = () => {
       {/* Countdown overlay */}
       {showCountdown && <Countdown onComplete={handleCountdownComplete} />}
 
+      {/* Menu Button */}
+      {onMenuOpen && (
+        <button className='menu-button' onClick={onMenuOpen}>
+          <i className="fa fa-bars"></i>
+        </button>
+      )}
+
+      {/* Language Selector */}
+      <LanguageSelector />
+
       {/* Modal Toggle Button */}
       <button className='modal' onClick={toggleModal}>
-        INFO <i class="fa fa-info-circle"></i>
+        INFO <i className="fa fa-info-circle"></i>
       </button>
       <InfoModal isOpen={isModalOpen} toggleModal={toggleModal} />
       <div className='game-info'>
-        {/* Modal Overlay */}
         <div className="current-turn">
-          <strong>{gamePhase === SIMULTANEOUS_SELECT_LOWER ? "SIMULTANEOUS ROUND: " : 
-                 gamePhase === SIMULTANEOUS_SELECT_UPPER ? "SIMULTANEOUS ROUND: " : 
-                 (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT) ? "SIMULTANEOUS ROUND: " : 
-                 "TURN-BASED ROUND: "
+          <strong>{
+            (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? `${t('game.freeplay', language)}: ` :
+            gamePhase === SIMULTANEOUS_SELECT_LOWER ? `${t('game.freeplay', language)}: ` :
+            gamePhase === SIMULTANEOUS_SELECT_UPPER ? `${t('game.freeplay', language)}: ` :
+            (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT) ? `${t('game.freeplay', language)}: ` :
+            `${t('game.turnBased', language)}: `
           }</strong>
           <span>{
-                 gamePhase === SIMULTANEOUS_SELECT_LOWER ? "LIGHT TURN" : 
-                 gamePhase === SIMULTANEOUS_SELECT_UPPER ? "DARK TURN" : 
-                 (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT) ? "BOTH TURN" : 
-                 `${currentTurn === PLAYER_UPPER ? "DARK" : "LIGHT" }'S TURN`
+            (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? t('game.bothTurn', language) :
+            gamePhase === SIMULTANEOUS_SELECT_LOWER ? t('game.lowerTurn', language) :
+            gamePhase === SIMULTANEOUS_SELECT_UPPER ? t('game.upperTurn', language) :
+            (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT) ? t('game.bothTurn', language) :
+            currentTurn === PLAYER_UPPER ? t('game.upperTurn', language) : t('game.lowerTurn', language)
           }</span>
         </div>
       </div>

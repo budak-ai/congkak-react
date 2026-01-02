@@ -1,0 +1,19 @@
+.language-selector {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(77, 106, 43, 0.9);
+  color: #EBEBD0;
+  border: 2px solid #EBEBD0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 100;
+  transition: background-color 0.2s;
+}
+
+.language-selector:hover {
+  background-color: rgba(77, 106, 43, 1);
+}
