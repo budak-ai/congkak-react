@@ -49,8 +49,19 @@ const TEST_SCENARIOS = {
   },
 };
 
-const DebugPanel = ({ onApplyScenario, currentSeeds, topHouseSeeds, lowHouseSeeds }) => {
+const INITIAL_SEEDS = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+
+const DebugPanel = ({
+  onApplyScenario,
+  currentSeeds,
+  topHouseSeeds,
+  lowHouseSeeds,
+  onUpdateHole,
+  onUpdateTopHouse,
+  onUpdateLowHouse,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Only render in development
   if (process.env.NODE_ENV !== 'development') {
@@ -58,6 +69,29 @@ const DebugPanel = ({ onApplyScenario, currentSeeds, topHouseSeeds, lowHouseSeed
   }
 
   const totalSeeds = currentSeeds.reduce((a, b) => a + b, 0) + topHouseSeeds + lowHouseSeeds;
+
+  const handleHoleChange = (index, delta) => {
+    const newValue = Math.max(0, currentSeeds[index] + delta);
+    onUpdateHole(index, newValue);
+  };
+
+  const handleHouseChange = (isTop, delta) => {
+    if (isTop) {
+      const newValue = Math.max(0, topHouseSeeds + delta);
+      onUpdateTopHouse(newValue);
+    } else {
+      const newValue = Math.max(0, lowHouseSeeds + delta);
+      onUpdateLowHouse(newValue);
+    }
+  };
+
+  const handleReset = () => {
+    onApplyScenario({
+      seeds: [...INITIAL_SEEDS],
+      topHouseSeeds: 0,
+      lowHouseSeeds: 0,
+    });
+  };
 
   return (
     <div className={`debug-panel ${isExpanded ? 'debug-panel--expanded' : ''}`}>
@@ -70,22 +104,105 @@ const DebugPanel = ({ onApplyScenario, currentSeeds, topHouseSeeds, lowHouseSeed
 
       {isExpanded && (
         <div className="debug-panel__content">
-          <div className="debug-panel__status">
-            <strong>Total Seeds:</strong> {totalSeeds}
-            {totalSeeds !== 98 && <span className="debug-panel__warning"> ⚠️ Expected 98!</span>}
+          <div className="debug-panel__header">
+            <div className="debug-panel__status">
+              <strong>Total Seeds:</strong> {totalSeeds}
+              {totalSeeds !== 98 && <span className="debug-panel__warning"> ⚠️ Expected 98!</span>}
+            </div>
+            <div className="debug-panel__controls">
+              <button
+                className={`debug-panel__edit-btn ${editMode ? 'debug-panel__edit-btn--active' : ''}`}
+                onClick={() => setEditMode(!editMode)}
+              >
+                {editMode ? 'Done Editing' : 'Edit Board'}
+              </button>
+              <button className="debug-panel__reset-btn" onClick={handleReset}>
+                Reset
+              </button>
+            </div>
           </div>
 
-          <div className="debug-panel__seeds">
-            <strong>Holes:</strong> [{currentSeeds.join(', ')}]
-          </div>
+          {editMode ? (
+            <div className="debug-panel__editor">
+              {/* Houses */}
+              <div className="debug-panel__houses-editor">
+                <div className="debug-panel__house-editor">
+                  <span>Upper House:</span>
+                  <button onClick={() => handleHouseChange(true, -1)}>-</button>
+                  <span className="debug-panel__value">{topHouseSeeds}</span>
+                  <button onClick={() => handleHouseChange(true, 1)}>+</button>
+                  <input
+                    type="number"
+                    value={topHouseSeeds}
+                    onChange={(e) => onUpdateTopHouse(Math.max(0, parseInt(e.target.value) || 0))}
+                    min="0"
+                  />
+                </div>
+                <div className="debug-panel__house-editor">
+                  <span>Lower House:</span>
+                  <button onClick={() => handleHouseChange(false, -1)}>-</button>
+                  <span className="debug-panel__value">{lowHouseSeeds}</span>
+                  <button onClick={() => handleHouseChange(false, 1)}>+</button>
+                  <input
+                    type="number"
+                    value={lowHouseSeeds}
+                    onChange={(e) => onUpdateLowHouse(Math.max(0, parseInt(e.target.value) || 0))}
+                    min="0"
+                  />
+                </div>
+              </div>
 
-          <div className="debug-panel__houses">
-            <span>Upper House: {topHouseSeeds}</span>
-            <span>Lower House: {lowHouseSeeds}</span>
-          </div>
+              {/* Board visualization */}
+              <div className="debug-panel__board">
+                <div className="debug-panel__row">
+                  <span className="debug-panel__row-label">Upper (0-6):</span>
+                  {currentSeeds.slice(0, 7).map((seeds, i) => (
+                    <div key={i} className="debug-panel__hole-editor">
+                      <span className="debug-panel__hole-index">{i}</span>
+                      <button onClick={() => handleHoleChange(i, -1)}>-</button>
+                      <input
+                        type="number"
+                        value={seeds}
+                        onChange={(e) => onUpdateHole(i, Math.max(0, parseInt(e.target.value) || 0))}
+                        min="0"
+                      />
+                      <button onClick={() => handleHoleChange(i, 1)}>+</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="debug-panel__row">
+                  <span className="debug-panel__row-label">Lower (7-13):</span>
+                  {currentSeeds.slice(7, 14).map((seeds, i) => (
+                    <div key={i + 7} className="debug-panel__hole-editor">
+                      <span className="debug-panel__hole-index">{i + 7}</span>
+                      <button onClick={() => handleHoleChange(i + 7, -1)}>-</button>
+                      <input
+                        type="number"
+                        value={seeds}
+                        onChange={(e) => onUpdateHole(i + 7, Math.max(0, parseInt(e.target.value) || 0))}
+                        min="0"
+                      />
+                      <button onClick={() => handleHoleChange(i + 7, 1)}>+</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="debug-panel__seeds">
+                <strong>Holes:</strong> [{currentSeeds.join(', ')}]
+              </div>
+
+              <div className="debug-panel__houses">
+                <span>Upper House: {topHouseSeeds}</span>
+                <span>Lower House: {lowHouseSeeds}</span>
+              </div>
+            </>
+          )}
 
           <div className="debug-panel__scenarios">
-            <strong>Test Scenarios:</strong>
+            <strong>Scenarios:</strong>
             {Object.entries(TEST_SCENARIOS).map(([key, scenario]) => (
               <button
                 key={key}

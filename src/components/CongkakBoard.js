@@ -123,6 +123,21 @@ const CongkakBoard = () => {
     setResetCursor(!resetCursor);
   };
 
+  // Debug panel handlers for individual board modifications
+  const handleUpdateHole = (index, value) => {
+    const newSeeds = [...seeds];
+    newSeeds[index] = value;
+    setSeeds(newSeeds);
+  };
+
+  const handleUpdateTopHouse = (value) => {
+    setTopHouseSeeds(value);
+  };
+
+  const handleUpdateLowHouse = (value) => {
+    setLowHouseSeeds(value);
+  };
+
   // Define the handlers for the mobile buttons
   const handleSButtonPress = async (index) => {
     if (!isSowingUpper) {
@@ -952,6 +967,9 @@ const CongkakBoard = () => {
         currentSeeds={seeds}
         topHouseSeeds={topHouseSeeds}
         lowHouseSeeds={lowHouseSeeds}
+        onUpdateHole={handleUpdateHole}
+        onUpdateTopHouse={handleUpdateTopHouse}
+        onUpdateLowHouse={handleUpdateLowHouse}
       />
     </div>
   );
