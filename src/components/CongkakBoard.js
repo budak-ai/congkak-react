@@ -8,6 +8,7 @@ import InfoModal from './InfoModal';
 import DebugPanel from './DebugPanel';
 import { handleWrongSelection } from '../utils/animation';
 import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
+import { validateSeedCount } from '../utils/seedValidator';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 
@@ -518,8 +519,8 @@ const CongkakBoard = () => {
       let endAtHouseUpper = (seedsInHandUpper === 0) && justFilledHomeUpper;
       let endAtHouseLower = (seedsInHandLower === 0) && justFilledHomeLower;
 
-      let endMoveUpper = (seedsInHandUpper === 0) && seeds[currentIndexUpper] === 1;
-      let endMoveLower = (seedsInHandLower === 0) && seeds[currentIndexLower] === 1;
+      let endMoveUpper = (seedsInHandUpper === 0) && newSeeds[currentIndexUpper] === 1;
+      let endMoveLower = (seedsInHandLower === 0) && newSeeds[currentIndexLower] === 1;
 
       if ((endAtHouseUpper && endAtHouseLower) || (endMoveUpper && endMoveLower)) {
         // Execute the moves for both players up to the house
@@ -661,7 +662,10 @@ const CongkakBoard = () => {
       setCurrentSeedsInHandUpper(seedsInHandUpper);
       setCurrentSeedsInHandLower(seedsInHandLower);
       await new Promise(resolve => setTimeout(resolve, 400)); // Synchronization delay
-    }    
+    }
+
+    // Validate seed count at end of simultaneous sowing
+    validateSeedCount(newSeeds, topHouseSeeds, lowHouseSeeds, 'simultaneousSowing end');
   }
 
 /**==============================================
@@ -862,6 +866,9 @@ const CongkakBoard = () => {
     }
     setIsSowing(false);
     setGamePhase(TURN_BASED_SELECT);
+
+    // Validate seed count at end of turn-based sowing
+    validateSeedCount(newSeeds, topHouseSeeds, lowHouseSeeds, 'turnBasedSowing end');
   };
 
   return (
