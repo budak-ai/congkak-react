@@ -12,7 +12,7 @@ import { validateSeedCount } from '../utils/seedValidator';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 
-const { 
+const {
   INIT_SEEDS_COUNT,
   HOLE_NUMBERS,
   PLAYER_LOWER,
@@ -21,6 +21,9 @@ const {
   MAX_INDEX_UPPER,
   MIN_INDEX_LOWER,
   MAX_INDEX_LOWER,
+  CAPTURE_ANIMATION_DELAY,
+  CONTINUE_SOWING_DELAY,
+  INITIAL_DELAY,
 } = config;
 
 const {
@@ -459,8 +462,8 @@ const CongkakBoard = () => {
     updateCursorPositionUpper(holeRefs, currentIndexUpper, 0);
     updateCursorPositionLower(holeRefs, currentIndexLower, 0);
     
-    await new Promise(resolve => setTimeout(resolve, 400)); // Animation delay
-    
+    await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY)); // Animation delay
+
     // Helper function to get the next index
     function getNextIndex(currentIndex, justFilledHome, maxIndex, minIndex) {
       if (justFilledHome) {
@@ -580,7 +583,7 @@ const CongkakBoard = () => {
             setCurrentSeedsInHandUpper(seedsInHandUpper);
             newSeeds[oppositeIndex] = 0;
             setSeeds([...newSeeds]);
-            await new Promise(resolve => setTimeout(resolve, 400));
+            await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY));
             // // TODO : Send captured seeds to House
             await updateCursorPositionUpper(topHouseRef, topHouseRef.current, -0.1);
             setTopHouseSeeds(prevSeeds => prevSeeds + capturedSeeds);
@@ -639,7 +642,7 @@ const CongkakBoard = () => {
             setCurrentSeedsInHandLower(seedsInHandLower);
             newSeeds[oppositeIndex] = 0;
             setSeeds([...newSeeds]);
-            await new Promise(resolve => setTimeout(resolve, 400));
+            await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY));
             // // TODO : Send captured seeds to House
             await updateCursorPositionLower(lowHouseRef, lowHouseRef.current, 0.1);
             setLowHouseSeeds(prevSeeds => prevSeeds + capturedSeeds);
@@ -661,7 +664,7 @@ const CongkakBoard = () => {
       // Update state for seeds in hand
       setCurrentSeedsInHandUpper(seedsInHandUpper);
       setCurrentSeedsInHandLower(seedsInHandLower);
-      await new Promise(resolve => setTimeout(resolve, 400)); // Synchronization delay
+      await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY)); // Synchronization delay
     }
 
     // Validate seed count at end of simultaneous sowing
@@ -775,7 +778,7 @@ const CongkakBoard = () => {
        *  If landed on non-empty house, continue sowing
        * ===========================================*/
       if (seedsInHand === 0 && newSeeds[currentIndex] > 1) {
-        await new Promise(resolve => setTimeout(resolve, 200)); // Animation delay
+        await new Promise(resolve => setTimeout(resolve, CONTINUE_SOWING_DELAY)); // Animation delay
         seedsInHand = newSeeds[currentIndex]; // Pick up all seeds from the current hole
         setCurrentSeedsInHand(seedsInHand);
         
@@ -837,8 +840,8 @@ const CongkakBoard = () => {
         setCurrentSeedsInHand(seedsInHand);
         newSeeds[oppositeIndex] = 0;
         setSeeds([...newSeeds]);
-        
-        await new Promise(resolve => setTimeout(resolve, 400)); // Animation delay
+
+        await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY)); // Animation delay
         // Send captured seeds to House
         // Animate cursor to the appropriate house and add captured seeds
         if (isUpperPlayer) {

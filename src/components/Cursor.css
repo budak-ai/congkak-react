@@ -4,7 +4,7 @@
     height: auto;
     /* background-size: ; */
     pointer-events: none; /* Ensures it doesn't interfere with clicks */
-    transition: top 0.25s, left 0.25s; /*Smooth transition for movement*/
+    transition: top 0.35s ease-out, left 0.35s ease-out; /* Synced with animation delay */
     z-index: 2;
   }
 
