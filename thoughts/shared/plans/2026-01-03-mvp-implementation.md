@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement the MVP features for Congkak: bug fixes (seed count, animation glitches), home menu with polished branding, global language selector (BM/EN), debug mode (dev builds only), and runtime assertions for game integrity.
+Implement the MVP features for Congkak: bug fixes (seed count, animation glitches), home menu with polished branding, global language selector (BM/EN), debug mode (dev builds only), runtime assertions for game integrity, and freeplay mode (countdown start, independent cursors, real-time updates).
 
 ## Current State Analysis
 
@@ -25,6 +25,7 @@ After MVP completion:
 3. Users see a polished home menu on load with Play, Rules, Settings options
 4. Language selection persists globally via localStorage
 5. Debug mode is available in development builds only
+6. Freeplay mode: countdown start, independent cursors, no START/RESUME buttons
 
 ### Verification:
 - Run game multiple times; seed count never deviates from 98
@@ -32,6 +33,7 @@ After MVP completion:
 - Home menu appears on initial load and is accessible during gameplay
 - Language changes reflect across entire app and persist on refresh
 - Debug panel visible in dev mode, hidden in production build
+- Game starts with countdown (3, 2, 1, GO!) and both players play independently
 
 ## What We're NOT Doing
 
@@ -41,6 +43,7 @@ After MVP completion:
 - Audio implementation - deferred
 - Shareable result cards - deferred
 - Major refactoring beyond what's needed for bug fixes
+- Synchronized simultaneous mode (replaced by freeplay)
 
 ---
 
@@ -64,6 +67,7 @@ Example commit messages:
 - `Phase 3: Animation Fixes - Standardize delays and sync transitions`
 - `Phase 4: Language System - Add global i18n with localStorage persistence`
 - `Phase 5: Home Menu - Add landing page and overlay menu`
+- `Phase 6: Freeplay Mode - Replace sync mode with countdown and independent cursors`
 
 This ensures:
 - Each phase is independently reversible
@@ -1277,6 +1281,379 @@ Add menu button styles:
 - [ ] All text respects language selection
 
 **Implementation Note**: After completing this phase, test the full menu flow thoroughly.
+
+**Git**: Commit and push before proceeding to Phase 6.
+
+---
+
+## Phase 6: Freeplay Mode
+
+### Overview
+Replace the synchronized simultaneous mode with freeplay mode where both players play independently at their own pace. The game starts with a countdown, and each player can pick up from any hole on their side whenever they're ready. No START/RESUME buttons, no pre-selecting starting holes, no synchronized movement.
+
+### Current Behavior (to be replaced):
+- Both players must select starting holes before pressing START
+- Cursors move in lockstep (synchronized animation)
+- Game pauses for RESUME when one player lands in their house
+- `isStartButtonPressed` state controls button visibility
+
+### New Freeplay Behavior:
+- Countdown (3, 2, 1, GO!) starts the game automatically
+- Each player can pick up from any hole on their side at any time
+- Cursors move independently (async)
+- Seeds update in real-time as each player sows
+- No pausing between moves
+- Players can start their next move as soon as they finish sowing
+
+### Changes Required:
+
+#### 1. Create Countdown Component
+**File**: `src/components/Countdown.js` (new file)
+
+```javascript
+import React, { useState, useEffect } from 'react';
+import './Countdown.css';
+
+const Countdown = ({ onComplete, duration = 3 }) => {
+  const [count, setCount] = useState(duration);
+  const [showGo, setShowGo] = useState(false);
+
+  useEffect(() => {
+    if (count > 0) {
+      const timer = setTimeout(() => setCount(count - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (count === 0 && !showGo) {
+      setShowGo(true);
+      setTimeout(() => {
+        onComplete();
+      }, 500);
+    }
+  }, [count, showGo, onComplete]);
+
+  return (
+    <div className="countdown-overlay">
+      <div className="countdown-content">
+        {count > 0 ? (
+          <span className="countdown-number">{count}</span>
+        ) : (
+          <span className="countdown-go">GO!</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Countdown;
+```
+
+**File**: `src/components/Countdown.css` (new file)
+
+```css
+.countdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(48, 46, 43, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.countdown-content {
+  text-align: center;
+}
+
+.countdown-number {
+  font-size: 10rem;
+  color: #EBEBD0;
+  font-weight: bold;
+  text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+  animation: pulse 0.5s ease-in-out;
+}
+
+.countdown-go {
+  font-size: 8rem;
+  color: #4d6a2b;
+  font-weight: bold;
+  text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+  animation: scaleUp 0.5s ease-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1.2); opacity: 0; }
+  50% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+@keyframes scaleUp {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+```
+
+#### 2. Add New Game Phase for Freeplay
+**File**: `src/config/gamePhaseConfig.js`
+
+Add new phase:
+```javascript
+const gamePhaseConfig = {
+    COUNTDOWN: 'COUNTDOWN',           // New: countdown before freeplay
+    FREEPLAY: 'FREEPLAY',             // New: async simultaneous play
+    // ... keep existing phases for turn-based mode
+    PASS_TO_TURN_BASED: 'PASS_TO_TURN_BASED',
+    TURN_BASED_SELECT: 'TURN_BASED_SELECT',
+    TURN_BASED_SOWING: 'TURN_BASED_SOWING'
+}
+```
+
+#### 3. Refactor CongkakBoard for Freeplay
+**File**: `src/components/CongkakBoard.js`
+
+**Remove these states:**
+```javascript
+// DELETE these lines:
+const [isStartButtonPressed, setIsStartButtonPressed] = useState(false);
+const [startingPositionUpper, setStartingPositionUpper] = useState(null);
+const [startingPositionLower, setStartingPositionLower] = useState(null);
+```
+
+**Add countdown state:**
+```javascript
+const [showCountdown, setShowCountdown] = useState(true);
+const [gameActive, setGameActive] = useState(false);
+```
+
+**Replace `startButtonPressed` function with countdown completion handler:**
+```javascript
+const handleCountdownComplete = () => {
+  setShowCountdown(false);
+  setGameActive(true);
+  setGamePhase(FREEPLAY);
+};
+```
+
+**Create independent sowing functions for each player:**
+
+```javascript
+// Freeplay sowing for Upper player (async, independent)
+const freeplaySowingUpper = async (startIndex) => {
+  if (isSowingUpper || !gameActive || isGameOver) return;
+  if (seeds[startIndex] === 0) {
+    handleWrongSelection(setShakeCursor, setShowSelectionMessage);
+    return;
+  }
+
+  setIsSowingUpper(true);
+  let currentIndex = startIndex;
+  let newSeeds = [...seeds];
+  let seedsInHand = newSeeds[startIndex];
+  let hasPassedHouse = 0;
+
+  newSeeds[startIndex] = 0;
+  setSeeds([...newSeeds]);
+  setCurrentSeedsInHandUpper(seedsInHand);
+
+  await updateCursorPositionUpper(holeRefs, currentIndex, 0);
+
+  while (seedsInHand > 0) {
+    // Sow into house if at end of upper row
+    if (currentIndex === MAX_INDEX_UPPER) {
+      hasPassedHouse++;
+      await updateCursorPositionUpper(topHouseRef, topHouseRef.current, -0.1);
+      setTopHouseSeeds(prev => prev + 1);
+      seedsInHand--;
+      setCurrentSeedsInHandUpper(seedsInHand);
+
+      if (seedsInHand > 0) {
+        currentIndex = MIN_INDEX_LOWER;
+      } else {
+        // Landed in house - can immediately pick next hole
+        setIsSowingUpper(false);
+        await updateCursorPositionUpper(holeRefs, startIndexUpper, verticalPosUpper);
+        setCurrentHoleIndexUpper(startIndexUpper);
+        return;
+      }
+    } else {
+      currentIndex = (currentIndex + 1) % HOLE_NUMBERS;
+    }
+
+    // Drop seed
+    await updateCursorPositionUpper(holeRefs, currentIndex, -0.5);
+    newSeeds = [...seeds]; // Get fresh state
+    newSeeds[currentIndex]++;
+    setSeeds([...newSeeds]);
+    seedsInHand--;
+    setCurrentSeedsInHandUpper(seedsInHand);
+
+    // Continue sowing if landed on non-empty hole
+    if (seedsInHand === 0 && newSeeds[currentIndex] > 1) {
+      await new Promise(resolve => setTimeout(resolve, CONTINUE_SOWING_DELAY));
+      seedsInHand = newSeeds[currentIndex];
+      setCurrentSeedsInHandUpper(seedsInHand);
+      newSeeds[currentIndex] = 0;
+      setSeeds([...newSeeds]);
+      await updateCursorPositionUpper(holeRefs, currentIndex, 0);
+    }
+
+    // Check for capture
+    if (seedsInHand === 0 && newSeeds[currentIndex] === 1 && hasPassedHouse > 0) {
+      const isOwnRow = currentIndex < MIN_INDEX_LOWER;
+      const oppositeIndex = MAX_INDEX_LOWER - currentIndex;
+
+      if (isOwnRow && newSeeds[oppositeIndex] > 0) {
+        // Capture logic
+        await updateCursorPositionUpper(holeRefs, currentIndex, 0);
+        seedsInHand = newSeeds[currentIndex];
+        newSeeds[currentIndex] = 0;
+
+        await updateCursorPositionUpper(holeRefs, oppositeIndex, -0.5);
+        const captured = newSeeds[oppositeIndex] + seedsInHand;
+        newSeeds[oppositeIndex] = 0;
+        setSeeds([...newSeeds]);
+
+        await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY));
+        await updateCursorPositionUpper(topHouseRef, topHouseRef.current, -0.1);
+        setTopHouseSeeds(prev => prev + captured);
+        seedsInHand = 0;
+        setCurrentSeedsInHandUpper(0);
+      }
+    }
+  }
+
+  // End of sowing - check for transition to turn-based
+  checkFreeplayEnd();
+  setIsSowingUpper(false);
+  await updateCursorPositionUpper(holeRefs, startIndexUpper, verticalPosUpper);
+  setCurrentHoleIndexUpper(startIndexUpper);
+};
+
+// Similar function for Lower player: freeplaySowingLower
+```
+
+**Add function to check if freeplay should end:**
+```javascript
+const checkFreeplayEnd = () => {
+  // If one player's row is empty and they're not sowing, transition to turn-based
+  const upperRowEmpty = seeds.slice(0, 7).every(s => s === 0);
+  const lowerRowEmpty = seeds.slice(7, 14).every(s => s === 0);
+
+  if ((upperRowEmpty && !isSowingUpper) || (lowerRowEmpty && !isSowingLower)) {
+    // Determine who goes first in turn-based
+    if (upperRowEmpty && !lowerRowEmpty) {
+      setCurrentTurn(PLAYER_LOWER);
+    } else if (lowerRowEmpty && !upperRowEmpty) {
+      setCurrentTurn(PLAYER_UPPER);
+    }
+    setGamePhase(TURN_BASED_SELECT);
+  }
+};
+```
+
+**Update keyboard handlers for freeplay:**
+```javascript
+// In handleKeyDown, update S key handler:
+if (event.key === 's' || event.key === 'S') {
+  if (gamePhase === FREEPLAY && !isSowingUpper) {
+    freeplaySowingUpper(currentHoleIndexUpper);
+  } else if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
+    // ... existing turn-based logic
+  }
+}
+
+// Update ArrowDown handler:
+if (event.key === 'ArrowDown') {
+  if (gamePhase === FREEPLAY && !isSowingLower) {
+    freeplaySowingLower(currentHoleIndexLower);
+  } else if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_LOWER) {
+    // ... existing turn-based logic
+  }
+}
+```
+
+**Update mobile click handlers:**
+```javascript
+const handleSButtonPress = async (index) => {
+  if (gamePhase === FREEPLAY && !isSowingUpper) {
+    await updateCursorPositionUpper(holeRefs, index, verticalPosUpper);
+    setCurrentHoleIndexUpper(index);
+    freeplaySowingUpper(index);
+  } else if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
+    // ... existing turn-based logic
+  }
+};
+
+// Similar for handleArrowDownPress
+```
+
+**Remove START/RESUME button JSX:**
+```javascript
+// DELETE these lines from button-group:
+{!isStartButtonPressed && gamePhase === STARTING_PHASE && !isGameOver && (
+    <button className="button start" onClick={() => startButtonPressed()}>START</button>
+)}
+{!isStartButtonPressed && (gamePhase === SIMULTANEOUS_SELECT || ...) && (
+  <button className='button resume' onClick={() => startButtonPressed()}>RESUME</button>
+)}
+```
+
+**Add Countdown component to render:**
+```javascript
+// At start of return, before app-wrapper content:
+{showCountdown && <Countdown onComplete={handleCountdownComplete} />}
+```
+
+#### 4. Handle Real-time Seed State
+**Important**: In freeplay, both players may modify `seeds` array simultaneously. To prevent race conditions:
+
+```javascript
+// Use functional updates for setSeeds:
+setSeeds(prevSeeds => {
+  const newSeeds = [...prevSeeds];
+  newSeeds[index]++;
+  return newSeeds;
+});
+
+// NOT:
+// const newSeeds = [...seeds];
+// newSeeds[index]++;
+// setSeeds(newSeeds);
+```
+
+#### 5. Update Game Info Display
+**File**: `src/components/CongkakBoard.js`
+
+Update the current-turn display for freeplay:
+```javascript
+<div className="current-turn">
+  <strong>{gamePhase === FREEPLAY ? "FREEPLAY: " : "TURN-BASED: "}</strong>
+  <span>{
+    gamePhase === FREEPLAY ? "BOTH PLAYING" :
+    `${currentTurn === PLAYER_UPPER ? "DARK" : "LIGHT"}'S TURN`
+  }</span>
+</div>
+```
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] App builds without errors: `npm run build`
+- [ ] No console errors during gameplay
+
+#### Manual Verification:
+- [ ] Countdown appears (3, 2, 1, GO!) when game starts
+- [ ] After countdown, both players can immediately start playing
+- [ ] Upper player can pick up and sow while Lower is also sowing
+- [ ] Cursors move independently (not synchronized)
+- [ ] Seed counts update in real-time as each player sows
+- [ ] Landing in own house allows immediate next move (no RESUME)
+- [ ] Game transitions to turn-based when one row becomes empty
+- [ ] No START or RESUME buttons appear
+- [ ] Debug panel still shows correct total seed count (98)
+
+**Implementation Note**: The key challenge is handling concurrent state updates. Use functional updates for `setSeeds` to prevent race conditions.
 
 **Git**: Final commit and push. Create a Pull Request to merge `feature/mvp-implementation` into `main`.
 
