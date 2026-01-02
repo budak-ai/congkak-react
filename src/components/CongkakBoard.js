@@ -6,6 +6,7 @@ import Cursor from './Cursor';
 import Row from './Row';
 import InfoModal from './InfoModal';
 import DebugPanel from './DebugPanel';
+import Countdown from './Countdown';
 import { handleWrongSelection } from '../utils/animation';
 import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
 import { validateSeedCount } from '../utils/seedValidator';
@@ -27,6 +28,8 @@ const {
 } = config;
 
 const {
+  COUNTDOWN,
+  FREEPLAY,
   STARTING_PHASE,
   SIMULTANEOUS_SELECT,
   SIMULTANEOUS_SELECT_UPPER,
@@ -44,13 +47,12 @@ const CongkakBoard = () => {
   const topHouseRef = useRef(null);
   const lowHouseRef = useRef(null);
   
-  const [gamePhase, setGamePhase] = useState(STARTING_PHASE); // or 'TURN_BASED'
-  
-  // New states for the starting phase
-  // const [isStartingPhase, setIsStartingPhase] = useState(true);
-  const [isStartButtonPressed, setIsStartButtonPressed] = useState(false);
+  const [gamePhase, setGamePhase] = useState(COUNTDOWN); // Start with countdown
 
-  // States for starting phase
+  // Freeplay mode states
+  const [showCountdown, setShowCountdown] = useState(true);
+
+  // States for starting phase (kept for compatibility with debug scenarios)
   const [startingPositionUpper, setStartingPositionUpper] = useState(null);
   const [startingPositionLower, setStartingPositionLower] = useState(null);
 
@@ -102,6 +104,12 @@ const CongkakBoard = () => {
     setModalOpen(!isModalOpen);
   };
 
+  // Countdown completion handler for freeplay mode
+  const handleCountdownComplete = () => {
+    setShowCountdown(false);
+    setGamePhase(FREEPLAY);
+  };
+
   // Debug panel handler for applying test scenarios
   const handleApplyScenario = (scenario) => {
     setSeeds([...scenario.seeds]);
@@ -145,11 +153,19 @@ const CongkakBoard = () => {
   // Define the handlers for the mobile buttons
   const handleSButtonPress = async (index) => {
     if (!isSowingUpper) {
-        // The logic that mimics the 'S' key press
-      if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
+      // Freeplay mode - both players sow independently using turn-based logic
+      if (gamePhase === FREEPLAY) {
+        if (seeds[index] === 0) {
+          handleWrongSelection(setShakeCursor, setShowSelectionMessage);
+          return;
+        }
+        await updateCursorPositionUpper(holeRefs, index, verticalPosUpper);
+        sowing(index, PLAYER_UPPER);
+      // Turn-based mode
+      } else if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
         await updateCursorPositionUpper(holeRefs, index, verticalPosUpper);
         setGamePhase(TURN_BASED_SOWING);
-        turnBasedSowing(index, PLAYER_UPPER);
+        sowing(index, PLAYER_UPPER);
       } else if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_UPPER) {
         await updateCursorPositionUpper(holeRefs, index, verticalPosUpper);
         setStartingPositionUpper(index);
@@ -159,11 +175,19 @@ const CongkakBoard = () => {
 
   const handleArrowDownPress = async (index) => {
     if (!isSowingLower) {
-      // The logic that mimics the 'ArrowDown' key press
-      if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_LOWER) {
+      // Freeplay mode - both players sow independently using turn-based logic
+      if (gamePhase === FREEPLAY) {
+        if (seeds[index] === 0) {
+          handleWrongSelection(setShakeCursor, setShowSelectionMessage);
+          return;
+        }
+        await updateCursorPositionLower(holeRefs, index, verticalPosLower);
+        sowing(index, PLAYER_LOWER);
+      // Turn-based mode
+      } else if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_LOWER) {
         await updateCursorPositionLower(holeRefs, index, verticalPosLower);
         setGamePhase(TURN_BASED_SOWING);
-        turnBasedSowing(index, PLAYER_LOWER);
+        sowing(index, PLAYER_LOWER);
       } else if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_LOWER) {
         await updateCursorPositionLower(holeRefs, index, verticalPosLower);
         setStartingPositionLower(index);
@@ -209,62 +233,6 @@ const CongkakBoard = () => {
   };
 
   /**=========================================================
-  *                 start button function 
-  * ==========================================================*/
-  const startButtonPressed = () => {
-    // handle the logic for both START and RESUME button
-    if (gamePhase === STARTING_PHASE) {
-      if (startingPositionUpper === null || seeds[startingPositionUpper] === 0) {
-        console.log("startingPosUpper: ", startingPositionUpper);
-        console.log("Please select starting position for Player Upper")
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-      } else if (startingPositionLower === null || seeds[startingPositionLower] === 0) {
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-        console.log("Please select starting position for Player Lower")
-      } else if ((startingPositionLower !== MIN_INDEX_LOWER && MAX_INDEX_UPPER - startingPositionUpper === MAX_INDEX_LOWER - startingPositionLower) || (startingPositionUpper !== MIN_INDEX_UPPER && MAX_INDEX_UPPER - startingPositionUpper === MAX_INDEX_LOWER - startingPositionLower)){
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-      } else {
-        console.log("START GAME!")
-        setIsStartButtonPressed(true);
-        simultaneousSowing(startingPositionUpper, startingPositionLower);
-      }
-    }
-    else if (gamePhase === SIMULTANEOUS_SELECT) {
-      if (startingPositionUpper === null || seeds[startingPositionUpper] === 0 || (startingPositionLower !== null && MAX_INDEX_UPPER - startingPositionUpper === MAX_INDEX_LOWER - startingPositionLower)) {
-        console.log("startingPosUpper: ", startingPositionUpper);
-        console.log("Please select starting position for Player Upper")
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-      } else if (startingPositionLower === null || seeds[startingPositionLower] === 0 || 
-        (startingPositionUpper !== null && MAX_INDEX_UPPER - startingPositionUpper === MAX_INDEX_LOWER - startingPositionLower)) {
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-        console.log("Please select starting position for Player Lower")
-      } else {
-        console.log("START GAME!")
-        setIsStartButtonPressed(true);
-        simultaneousSowing(startingPositionUpper, startingPositionLower);
-      }
-    // resume button logic
-    } else if (gamePhase === SIMULTANEOUS_SELECT_UPPER) {
-      if (startingPositionUpper === null || seeds[startingPositionUpper] === 0 || startingPositionUpper === currentHoleIndexLower) {
-        console.log("Please select starting position for Player Upper");
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-      } else {
-        setIsStartButtonPressed(true);
-        simultaneousSowing(startingPositionUpper, null);
-      }
-    } else if (gamePhase === SIMULTANEOUS_SELECT_LOWER) {
-      if (startingPositionLower === null || seeds[startingPositionLower] === 0 || startingPositionLower === currentHoleIndexUpper) {
-        console.log("Please select starting position for Player Lower");
-        handleWrongSelection(setShakeCursor, setShowSelectionMessage);
-      } else {
-        setIsStartButtonPressed(true);
-        simultaneousSowing(null, startingPositionLower);
-      }
-    }
-  }
-
-  
-  /**=========================================================
   *   Transition from SIMULTANEOUS phase to TURN_BASED phase 
   * ==========================================================*/
   useEffect(() => {
@@ -274,13 +242,13 @@ const CongkakBoard = () => {
     }
   }, [gamePhase, isSowingUpper, isSowingLower]);
 
-  // Effect to call turnBasedSowing when currentTurn updates
+  // Effect to call sowing when currentTurn updates
   useEffect(() => {
     if (gamePhase === PASS_TO_TURN_BASED && currentTurn !== null) {
       const currentPosition = currentTurn === PLAYER_UPPER ? currentHoleIndexUpper : currentHoleIndexLower;
       console.log(`Current Turn: ${currentTurn} | Current position: ${currentPosition} | Seeds: ${seeds[currentPosition]}` );
       setGamePhase(TURN_BASED_SOWING);
-      turnBasedSowing(currentPosition, currentTurn, true, passedHouse);
+      sowing(currentPosition, currentTurn, true, passedHouse);
     }
   }, [currentTurn, gamePhase, currentHoleIndexUpper, currentHoleIndexLower]);
 
@@ -366,7 +334,7 @@ const CongkakBoard = () => {
           if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
             // Start sowing for PlayerUpper
             setGamePhase(TURN_BASED_SOWING);
-            turnBasedSowing(newIndexUpper, PLAYER_UPPER);
+            sowing(newIndexUpper, PLAYER_UPPER);
           } else if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_UPPER) {
             setStartingPositionUpper(newIndexUpper);
           }
@@ -387,19 +355,13 @@ const CongkakBoard = () => {
           if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_LOWER) {
             // Start sowing for PlayerLower
             setGamePhase(TURN_BASED_SOWING);
-            turnBasedSowing(newIndexLower, PLAYER_LOWER);
+            sowing(newIndexLower, PLAYER_LOWER);
           } else if (gamePhase === STARTING_PHASE || gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_LOWER) {
             setStartingPositionLower(newIndexLower);
           }
         }
       }
 
-      if ((!isSowingUpper || !isSowingLower) || (!startButtonPressed && gamePhase === STARTING_PHASE)) {
-        if (event.code === 'Space' || event.key === 32) {
-          console.log("SPACE pressed")
-          startButtonPressed();
-        }
-      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
@@ -427,254 +389,9 @@ const CongkakBoard = () => {
   }, [seeds, currentTurn, isSowingUpper, isSowingLower, isGameOver]);
 
 /**==============================================
- *        SIMULTANEOUS SOWING LOGIC
+ *        SOWING LOGIC
  * =============================================*/
-  const simultaneousSowing = async (startingPositionUpper, startingPositionLower) => {
-    console.log("Start simultaneous sowing!")
-    
-    if (gamePhase !== STARTING_PHASE && gamePhase !== SIMULTANEOUS_SELECT && gamePhase !== SIMULTANEOUS_SELECT_UPPER && gamePhase !== SIMULTANEOUS_SELECT_LOWER) return;
-    setIsSowingUpper(true);
-    setIsSowingLower(true);
-    
-    let currentIndexUpper = startingPositionUpper !== null ? startingPositionUpper : currentHoleIndexUpper;
-    let currentIndexLower = startingPositionLower !== null ? startingPositionLower : currentHoleIndexLower;
-    setStartingPositionUpper(null);
-    setStartingPositionLower(null);
-    let newSeeds = [...seeds];
-    let seedsInHandUpper = startingPositionUpper !== null ? newSeeds[startingPositionUpper] : currentSeedsInHandUpper;
-    let seedsInHandLower = startingPositionLower !== null ? newSeeds[startingPositionLower] : currentSeedsInHandLower;
-    setCurrentSeedsInHandUpper(seedsInHandUpper);
-    setCurrentSeedsInHandLower(seedsInHandLower);
-
-    console.log("Starting index upper: ", currentIndexUpper)
-    console.log("Starting index lower: ", currentIndexLower)
-  
-    let hasPassedHouseUpper = 0;
-    let hasPassedHouseLower = 0;
-    let justFilledHomeUpper = false;
-    let justFilledHomeLower = false;
-    
-    newSeeds[currentIndexUpper] = 0;
-    setSeeds([...newSeeds]);
-    newSeeds[currentIndexLower] = 0;
-    setSeeds([...newSeeds]);
-    
-    updateCursorPositionUpper(holeRefs, currentIndexUpper, 0);
-    updateCursorPositionLower(holeRefs, currentIndexLower, 0);
-    
-    await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY)); // Animation delay
-
-    // Helper function to get the next index
-    function getNextIndex(currentIndex, justFilledHome, maxIndex, minIndex) {
-      if (justFilledHome) {
-        return minIndex;
-      }
-      return currentIndex === maxIndex ? minIndex : (currentIndex + 1) % HOLE_NUMBERS;
-    }
-
-    // Separate function to handle upper player's sowing
-    const handleUpperPlayerSowing = async () => {
-      if (seedsInHandUpper > 0) {
-        let nextIndexUpper = getNextIndex(currentIndexUpper, justFilledHomeUpper, MAX_INDEX_UPPER, MIN_INDEX_LOWER);
-        let sowIntoHouseUpper = nextIndexUpper === MIN_INDEX_LOWER && !justFilledHomeUpper;
-        if (sowIntoHouseUpper) {
-          hasPassedHouseUpper++;
-          await updateCursorPositionUpper(topHouseRef, topHouseRef.current, -0.1);
-          setTopHouseSeeds(prevSeeds => prevSeeds + 1);
-          seedsInHandUpper -= 1;
-          justFilledHomeUpper = true;
-        } else {
-          await updateCursorPositionUpper(holeRefs, nextIndexUpper, -0.5);
-          newSeeds[nextIndexUpper]++;
-          seedsInHandUpper -= 1;
-          currentIndexUpper = nextIndexUpper;
-          justFilledHomeUpper = false;
-        }
-        // setSeeds([...newSeeds]);
-        setCurrentSeedsInHandUpper(seedsInHandUpper);
-      }
-    };
-
-    // Separate function to handle lower player's sowing
-    const handleLowerPlayerSowing = async () => {
-      if (seedsInHandLower > 0) {
-        let nextIndexLower = getNextIndex(currentIndexLower, justFilledHomeLower, MAX_INDEX_LOWER, MIN_INDEX_UPPER);
-        let sowIntoHouseLower = nextIndexLower === MIN_INDEX_UPPER && !justFilledHomeLower;
-        if (sowIntoHouseLower) {
-          hasPassedHouseLower++;
-          await updateCursorPositionLower(lowHouseRef, lowHouseRef.current, 0.1);
-          setLowHouseSeeds(prevSeeds => prevSeeds + 1);
-          seedsInHandLower -= 1;
-          justFilledHomeLower = true;
-        } else {
-          await updateCursorPositionLower(holeRefs, nextIndexLower, 0.5);
-          newSeeds[nextIndexLower]++;
-          seedsInHandLower -= 1;
-          currentIndexLower = nextIndexLower;
-          justFilledHomeLower = false;
-        }
-        // setSeeds([...newSeeds]);
-        setCurrentSeedsInHandLower(seedsInHandLower);
-      }
-    };
-    
-    while (seedsInHandUpper >= 0 || seedsInHandLower >= 0) {
-      let endAtHouseUpper = (seedsInHandUpper === 0) && justFilledHomeUpper;
-      let endAtHouseLower = (seedsInHandLower === 0) && justFilledHomeLower;
-
-      let endMoveUpper = (seedsInHandUpper === 0) && newSeeds[currentIndexUpper] === 1;
-      let endMoveLower = (seedsInHandLower === 0) && newSeeds[currentIndexLower] === 1;
-
-      if ((endAtHouseUpper && endAtHouseLower) || (endMoveUpper && endMoveLower)) {
-        // Execute the moves for both players up to the house
-        console.log("Both end simultaneously.");
-        setIsSowingUpper(false);
-        setIsSowingLower(false);
-        setIsStartButtonPressed(false);
-        setResetCursor(prev => !prev);
-        setGamePhase(SIMULTANEOUS_SELECT);
-        break;
-      }
-
-      handleUpperPlayerSowing();
-      handleLowerPlayerSowing();
-      setSeeds([...newSeeds]);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Synchronization delay 
-      
-    /** ============================================
-     *      Continue sowing movement & capturing
-     * ===========================================*/
-      // // TODO: Implement capturing
-
-      if (seedsInHandUpper === 0) {
-        if (justFilledHomeUpper) {
-          console.log("End at House Upper");
-          // get the opponent's state
-          setCurrentSeedsInHandLower(seedsInHandLower);
-          setCurrentHoleIndexLower(currentIndexLower);
-          // reset the lower cursor
-          setIsSowingUpper(false);
-          setIsStartButtonPressed(false);
-          setGamePhase(SIMULTANEOUS_SELECT_UPPER);
-          break;
-        } else if (newSeeds[currentIndexUpper] > 1) {
-          await updateCursorPositionUpper(holeRefs, currentIndexUpper, 0);
-          seedsInHandUpper = newSeeds[currentIndexUpper];
-          setCurrentSeedsInHandUpper(seedsInHandUpper);
-          newSeeds[currentIndexUpper] = 0;
-          setSeeds([...newSeeds]);
-        } else if (newSeeds[currentIndexUpper] === 1) {
-          console.log("[UPPER] Check for capturing or end movement")
-          let oppositeIndex = MAX_INDEX_LOWER - currentIndexUpper;
-          const isOwnRow = currentIndexUpper < MIN_INDEX_LOWER;
-          if (isOwnRow && newSeeds[oppositeIndex] > 0 && hasPassedHouseUpper > 0) {
-            console.log('[UPPER] now capturing...')
-            // // TODO : Implement capturing here
-            // // TODO : Pick up from current hole
-            await updateCursorPositionUpper(holeRefs, currentIndexUpper, 0);
-            seedsInHandUpper = newSeeds[currentIndexUpper];
-            setCurrentSeedsInHandUpper(seedsInHandUpper);
-            newSeeds[currentIndexUpper] = 0;
-            setSeeds([...newSeeds]);
-            // // TODO : Pick up from opposite hole
-            await updateCursorPositionUpper(holeRefs, oppositeIndex, -0.5);
-            let capturedSeeds = newSeeds[oppositeIndex] + seedsInHandUpper;
-            seedsInHandUpper = capturedSeeds;
-            setCurrentSeedsInHandUpper(seedsInHandUpper);
-            newSeeds[oppositeIndex] = 0;
-            setSeeds([...newSeeds]);
-            await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY));
-            // // TODO : Send captured seeds to House
-            await updateCursorPositionUpper(topHouseRef, topHouseRef.current, -0.1);
-            setTopHouseSeeds(prevSeeds => prevSeeds + capturedSeeds);
-            seedsInHandUpper = 0;
-            setCurrentSeedsInHandUpper(seedsInHandUpper);
-          } 
-          // end movement,
-          setIsSowingUpper(false);
-          // get the opponent position
-          setCurrentHoleIndexLower(currentIndexLower);
-          console.log("Current lower position: ", currentIndexLower);
-          console.log("Current seeds in lower position: ", newSeeds[currentIndexLower]);
-          // get opponent's passed house status
-          setPassedHouse(hasPassedHouseLower);
-          // Change game phase to TURN_BASED
-          setGamePhase(PASS_TO_TURN_BASED);
-          return;
-        }
-      } 
-      
-      if (seedsInHandLower === 0) {
-        if (justFilledHomeLower) {
-          console.log("End at House lower");
-          // get the opponent's state
-          setCurrentSeedsInHandUpper(seedsInHandUpper);
-          setCurrentHoleIndexUpper(currentIndexUpper);
-          // Reset the lower cursor
-          setIsSowingLower(false);
-          setIsStartButtonPressed(false);
-          setGamePhase(SIMULTANEOUS_SELECT_LOWER);
-          break;
-        } else if (newSeeds[currentIndexLower] > 1) {
-          await updateCursorPositionLower(holeRefs, currentIndexLower, 0);
-          seedsInHandLower = newSeeds[currentIndexLower];
-          setCurrentSeedsInHandLower(seedsInHandLower);
-          newSeeds[currentIndexLower] = 0;
-          setSeeds([...newSeeds]);
-        } else if (newSeeds[currentIndexLower] === 1) { 
-          // capturing
-          console.log("[LOWER] Check for capturing or end movement.")
-          let oppositeIndex = MAX_INDEX_LOWER - currentIndexLower;
-          const isOwnRow = currentIndexLower > MAX_INDEX_UPPER;
-          if (isOwnRow && newSeeds[oppositeIndex] > 0 && hasPassedHouseLower > 0) {
-            console.log('LOWER: now capturing...')
-            // // TODO : Implement capturing here
-            // // TODO : Pick up from current hole
-            await updateCursorPositionLower(holeRefs, currentIndexLower, 0);
-            seedsInHandLower = newSeeds[currentIndexLower];
-            setCurrentSeedsInHandLower(seedsInHandLower);
-            newSeeds[currentIndexLower] = 0;
-            setSeeds([...newSeeds]);
-            // // TODO : Pick up from opposite hole
-            await updateCursorPositionLower(holeRefs, oppositeIndex, 0.5);
-            let capturedSeeds = newSeeds[oppositeIndex] + seedsInHandLower;
-            seedsInHandLower = capturedSeeds;
-            setCurrentSeedsInHandLower(seedsInHandLower);
-            newSeeds[oppositeIndex] = 0;
-            setSeeds([...newSeeds]);
-            await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY));
-            // // TODO : Send captured seeds to House
-            await updateCursorPositionLower(lowHouseRef, lowHouseRef.current, 0.1);
-            setLowHouseSeeds(prevSeeds => prevSeeds + capturedSeeds);
-            seedsInHandLower = 0;
-            setCurrentSeedsInHandLower(seedsInHandLower);
-          }
-          // end movement,
-          setIsSowingLower(false);
-          // get the opponent position
-          setCurrentHoleIndexUpper(currentIndexUpper);
-          // get opponent's passed house status
-          setPassedHouse(hasPassedHouseUpper);
-          // Change game phase to TURN_BASED
-          setGamePhase(PASS_TO_TURN_BASED);
-          return;
-        }
-      }
-      
-      // Update state for seeds in hand
-      setCurrentSeedsInHandUpper(seedsInHandUpper);
-      setCurrentSeedsInHandLower(seedsInHandLower);
-      await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY)); // Synchronization delay
-    }
-
-    // Validate seed count at end of simultaneous sowing
-    validateSeedCount(newSeeds, topHouseSeeds, lowHouseSeeds, 'simultaneousSowing end');
-  }
-
-/**==============================================
- *        TURN BASED SOWING LOGIC
- * =============================================*/
-  const turnBasedSowing = async (index, player, isContinuation = false, passedHouse = 0) => {
+  const sowing = async (index, player, isContinuation = false, passedHouse = 0) => {
     // Determine player-specific states and actions
     const isUpperPlayer = player === PLAYER_UPPER;
     const currentHouseRef = isUpperPlayer ? topHouseRef : lowHouseRef;
@@ -871,11 +588,14 @@ const CongkakBoard = () => {
     setGamePhase(TURN_BASED_SELECT);
 
     // Validate seed count at end of turn-based sowing
-    validateSeedCount(newSeeds, topHouseSeeds, lowHouseSeeds, 'turnBasedSowing end');
+    validateSeedCount(newSeeds, topHouseSeeds, lowHouseSeeds, 'sowing end');
   };
 
   return (
     <div className='app-wrapper'>
+      {/* Countdown overlay */}
+      {showCountdown && <Countdown onComplete={handleCountdownComplete} />}
+
       {/* Modal Toggle Button */}
       <button className='modal' onClick={toggleModal}>
         INFO <i class="fa fa-info-circle"></i>
@@ -947,13 +667,6 @@ const CongkakBoard = () => {
             Please select a valid position.
           </div>)} */}
         <div className='button-group'>
-          {!isStartButtonPressed && gamePhase === STARTING_PHASE && !isGameOver && (
-              <button className="button start" 
-              onClick={() => startButtonPressed()}>START</button>
-          )}
-          {!isStartButtonPressed && (gamePhase === SIMULTANEOUS_SELECT || gamePhase === SIMULTANEOUS_SELECT_LOWER || gamePhase === SIMULTANEOUS_SELECT_UPPER) && (
-            <button className='button resume' onClick={() => startButtonPressed()}>RESUME</button>
-          )}
           {isGameOver && (<button className="button refresh" onClick={() => window.location.reload(true)}>
             RESTART
           </button>)}
