@@ -1,7 +1,7 @@
 import React from "react";
 import "./Cursor.css";
 
-const Cursor = ({ color, shake, triggerShake, top, left, visible, seedCount, isTopTurn }) => {
+const Cursor = ({ color, shake, top, left, visible, seedCount, isTopTurn }) => {
   const svgCursor = (
     // Inline SVG code for LOWER cursor
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 440">

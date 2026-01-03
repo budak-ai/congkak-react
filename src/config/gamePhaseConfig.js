@@ -3,13 +3,8 @@
 const gamePhaseConfig = {
     COUNTDOWN: 'COUNTDOWN',                           // Countdown before freeplay
     FREEPLAY: 'FREEPLAY',                             // Async simultaneous play
-    STARTING_PHASE : 'STARTING_PHASE',
-    SIMULTANEOUS_SELECT : 'SIMULTANEOUS_SELECT',
-    SIMULTANEOUS_SELECT_UPPER : 'SIMULTANEOUS_SELECT_UPPER',
-    SIMULTANEOUS_SELECT_LOWER : 'SIMULTANEOUS_SELECT_LOWER',
-    PASS_TO_TURN_BASED : 'PASS_TO_TURN_BASED',
-    TURN_BASED_SELECT : 'TURN_BASED_SELECT',
-    TURN_BASED_SOWING : 'TURN_BASED_SOWING'
+    TURN_BASED_SELECT : 'TURN_BASED_SELECT',          // Waiting for player to select hole
+    TURN_BASED_SOWING : 'TURN_BASED_SOWING'           // Player is sowing seeds
 }
 
 export default gamePhaseConfig;
