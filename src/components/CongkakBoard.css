@@ -307,3 +307,50 @@ body {
     left: 0;
   }
 } */
+/* Start button overlay */
+.start-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(48, 46, 43, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.start-button {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #302E2B;
+  background-color: #EBEBD0;
+  border: none;
+  border-radius: 20px;
+  padding: 1.5rem 4rem;
+  cursor: pointer;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: startPulse 2s ease-in-out infinite;
+}
+
+.start-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.start-button:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes startPulse {
+  0%, 100% {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(235, 235, 208, 0.3), 0 8px 20px rgba(0, 0, 0, 0.4);
+  }
+}

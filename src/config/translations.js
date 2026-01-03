@@ -7,6 +7,7 @@ const translations = {
   'menu.subtitle': { EN: 'Traditional Malaysian Game', BM: 'Permainan Tradisional Malaysia' },
 
   // Game UI
+  'game.start': { EN: 'START', BM: 'MULA' },
   'game.restart': { EN: 'RESTART', BM: 'ULANG' },
   'game.upperTurn': { EN: "DARK's TURN", BM: 'GILIRAN GELAP' },
   'game.lowerTurn': { EN: "WHITE's TURN", BM: 'GILIRAN PUTIH' },

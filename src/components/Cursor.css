@@ -8,6 +8,10 @@
     z-index: 2;
   }
 
+  .hand-cursor.no-transition {
+    transition: none !important;
+  }
+
   @keyframes shake {
     0% { transform: translate(1px, 1px) rotate(0deg); }
     10% { transform: translate(-1px, -2px) rotate(-1deg); }

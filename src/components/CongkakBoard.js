@@ -50,13 +50,18 @@ const CongkakBoard = ({ onMenuOpen }) => {
   const [gamePhase, setGamePhase] = useState(COUNTDOWN); // Start with countdown
 
   // Freeplay mode states
-  const [showCountdown, setShowCountdown] = useState(true);
+  const [showStartButton, setShowStartButton] = useState(true); // Show start button before game
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdownKey, setCountdownKey] = useState(0); // Key to force Countdown remount on reset
+  const [disableCursorTransition, setDisableCursorTransition] = useState(false); // Disable cursor animation during reset
   const [freeplayWaitingUpper, setFreeplayWaitingUpper] = useState(false); // Upper's turn ended, waiting
   const [freeplayWaitingLower, setFreeplayWaitingLower] = useState(false); // Lower's turn ended, waiting
   const freeplayWaitingUpperRef = useRef(false); // Ref for real-time waiting state
   const freeplayWaitingLowerRef = useRef(false); // Ref for real-time waiting state
   const firstToEndRef = useRef(null); // Track who ended first in freeplay
   const resetRequestedRef = useRef(false); // Flag to abort sowing on reset
+  const resetGenerationRef = useRef(0); // Increments on each reset to invalidate pending operations
+  const gamePausedRef = useRef(true); // Blocks ALL cursor updates when true (starts paused)
 
   // Refs for real-time sowing state (to avoid stale closure in freeplay transition)
   const isSowingUpperRef = useRef(false);
@@ -166,10 +171,19 @@ const CongkakBoard = ({ onMenuOpen }) => {
     setFreeplayWaitingLower(value);
   };
 
+  // Start button click handler
+  const handleStartClick = () => {
+    setShowStartButton(false);
+    setShowCountdown(true);
+    setCountdownKey(prev => prev + 1); // Ensure fresh countdown
+  };
+
   // Countdown completion handler for freeplay mode
   const handleCountdownComplete = () => {
     setShowCountdown(false);
     setGamePhase(FREEPLAY);
+    // Unpause the game - allow cursor updates
+    gamePausedRef.current = false;
   };
 
   // Debug panel handler for applying test scenarios
@@ -214,10 +228,19 @@ const CongkakBoard = ({ onMenuOpen }) => {
     updateLowHouseSeeds(value);
   };
 
-  // Quick reset handler
+  // Quick reset handler - snappy immediate reset
   const handleQuickReset = () => {
+    // PAUSE FIRST - blocks all cursor updates
+    gamePausedRef.current = true;
+
+    // Increment generation to invalidate all pending cursor updates
+    resetGenerationRef.current++;
+
     // Signal abort to any running sowing operations
     resetRequestedRef.current = true;
+
+    // Disable cursor transition for instant snap
+    setDisableCursorTransition(true);
 
     // Reset seeds
     updateSeeds(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT));
@@ -226,9 +249,10 @@ const CongkakBoard = ({ onMenuOpen }) => {
     updateSeedsInHandUpper(0);
     updateSeedsInHandLower(0);
 
-    // Reset game state
+    // Reset game state - show start button
     setGamePhase(COUNTDOWN);
-    setShowCountdown(true);
+    setShowStartButton(true);
+    setShowCountdown(false);
     setIsGameOver(false);
     setOutcomeMessage('');
     setCurrentTurn(null);
@@ -239,20 +263,35 @@ const CongkakBoard = ({ onMenuOpen }) => {
     firstToEndRef.current = null;
     setPassedHouse(0);
 
-    // Reset cursor positions to initial holes
-    setCurrentHoleIndexUpper(0);
-    setCurrentHoleIndexLower(7);
-    setResetCursor(!resetCursor);
-    console.log('[RESET] Game reset');
+    // Reset cursor positions immediately
+    setCurrentHoleIndexUpper(startIndexUpper);
+    setCurrentHoleIndexLower(startIndexLower);
 
-    // Clear the reset flag after a short delay
-    setTimeout(() => {
+    // Set cursor positions directly with forceUpdate to bypass all checks
+    const upperHole = holeRefs.current[startIndexUpper];
+    const lowerHole = holeRefs.current[startIndexLower];
+    if (upperHole) {
+      const rect = upperHole.getBoundingClientRect();
+      setCursorLeftUpper(rect.left + window.scrollX);
+      setCursorTopUpper(rect.top + window.scrollY + (verticalPosUpper * rect.height));
+    }
+    if (lowerHole) {
+      const rect = lowerHole.getBoundingClientRect();
+      setCursorLeftLower(rect.left + window.scrollX);
+      setCursorTopLower(rect.top + window.scrollY + (verticalPosLower * rect.height));
+    }
+
+    // Re-enable transitions after next frame (game stays paused until START)
+    requestAnimationFrame(() => {
       resetRequestedRef.current = false;
-    }, 100);
+      setDisableCursorTransition(false);
+    });
   };
 
   // Define the handlers for the mobile buttons
   const handleSButtonPress = async (index) => {
+    // Block input when paused
+    if (gamePausedRef.current) return;
     if (!isSowingUpper) {
       // Freeplay mode - both players sow independently using turn-based logic
       if (gamePhase === FREEPLAY) {
@@ -278,6 +317,8 @@ const CongkakBoard = ({ onMenuOpen }) => {
   };
 
   const handleArrowDownPress = async (index) => {
+    // Block input when paused
+    if (gamePausedRef.current) return;
     if (!isSowingLower) {
       // Freeplay mode - both players sow independently using turn-based logic
       if (gamePhase === FREEPLAY) {
@@ -303,9 +344,15 @@ const CongkakBoard = ({ onMenuOpen }) => {
   };
 
   // Function to update cursor position for PlayerUpper
-  const updateCursorPositionUpper = async (ref, indexOrElement, verticalPosUpper) => {
-    // Abort if reset requested
-    if (resetRequestedRef.current) return;
+  const updateCursorPositionUpper = async (ref, indexOrElement, verticalPosUpper, forceUpdate = false) => {
+    // Block ALL updates when game is paused (unless forcing)
+    if (!forceUpdate && gamePausedRef.current) return;
+
+    // Capture generation at start - if it changes, abort
+    const myGeneration = resetGenerationRef.current;
+
+    // Abort if reset requested (unless forcing for reset itself)
+    if (!forceUpdate && resetRequestedRef.current) return;
 
     let element;
 
@@ -317,18 +364,33 @@ const CongkakBoard = ({ onMenuOpen }) => {
     }
 
     if (element) {
+      // Check game not paused and generation hasn't changed
+      if (!forceUpdate && gamePausedRef.current) return;
+      if (!forceUpdate && myGeneration !== resetGenerationRef.current) return;
+      if (!forceUpdate && resetRequestedRef.current) return;
+
       const rect = element.getBoundingClientRect();
       setCursorLeftUpper(rect.left + window.scrollX);
       setCursorTopUpper(rect.top + window.scrollY + (verticalPosUpper * rect.height));
-      console.log(`[CURSOR UPPER] Move to ${typeof indexOrElement === "number" ? `hole ${indexOrElement}` : 'house'} | visible: ${cursorVisibilityUpper.visible} | sowing: ${isSowingUpper}`);
+
+      // Skip delay if reset requested or forced update
+      if (forceUpdate || resetRequestedRef.current || gamePausedRef.current) return;
+      if (myGeneration !== resetGenerationRef.current) return;
+
       await new Promise(resolve => setTimeout(resolve, animationDelay)); // Animation delay
     }
   };
 
   // Function to update cursor position for PlayerLower
-  const updateCursorPositionLower = async (ref, indexOrElement, verticalPosLower) => {
-    // Abort if reset requested
-    if (resetRequestedRef.current) return;
+  const updateCursorPositionLower = async (ref, indexOrElement, verticalPosLower, forceUpdate = false) => {
+    // Block ALL updates when game is paused (unless forcing)
+    if (!forceUpdate && gamePausedRef.current) return;
+
+    // Capture generation at start - if it changes, abort
+    const myGeneration = resetGenerationRef.current;
+
+    // Abort if reset requested (unless forcing for reset itself)
+    if (!forceUpdate && resetRequestedRef.current) return;
 
     let element;
     // determine if indexOrElement is an index or a DOM element
@@ -339,10 +401,19 @@ const CongkakBoard = ({ onMenuOpen }) => {
     }
 
     if (element) {
+      // Check game not paused and generation hasn't changed
+      if (!forceUpdate && gamePausedRef.current) return;
+      if (!forceUpdate && myGeneration !== resetGenerationRef.current) return;
+      if (!forceUpdate && resetRequestedRef.current) return;
+
       const rect = element.getBoundingClientRect();
       setCursorLeftLower(rect.left + window.scrollX);
       setCursorTopLower(rect.top + window.scrollY + (verticalPosLower * rect.height));
-      console.log(`[CURSOR LOWER] Move to ${typeof indexOrElement === "number" ? `hole ${indexOrElement}` : 'house'} | visible: ${cursorVisibilityLower.visible} | sowing: ${isSowingLower}`);
+
+      // Skip delay if reset requested or forced update
+      if (forceUpdate || resetRequestedRef.current || gamePausedRef.current) return;
+      if (myGeneration !== resetGenerationRef.current) return;
+
       await new Promise(resolve => setTimeout(resolve, animationDelay)); // Animation delay
     }
   };
@@ -419,6 +490,8 @@ const CongkakBoard = ({ onMenuOpen }) => {
   useEffect(() => {
 
     const handleKeyDown = (event) => {
+      // Block all keyboard input when paused
+      if (gamePausedRef.current) return;
 
       let newIndexUpper = currentHoleIndexUpper;
       let newIndexLower = currentHoleIndexLower;
@@ -490,6 +563,12 @@ const CongkakBoard = ({ onMenuOpen }) => {
  *        SOWING LOGIC
  * =============================================*/
   const sowing = async (index, player, isContinuation = false, passedHouse = 0) => {
+    // Helper to check if sowing should abort
+    const shouldAbort = () => gamePausedRef.current || resetRequestedRef.current;
+
+    // Abort immediately if paused/reset
+    if (shouldAbort()) return;
+
     // Determine player-specific states and actions
     const isUpperPlayer = player === PLAYER_UPPER;
     const currentHouseRef = isUpperPlayer ? topHouseRef : lowHouseRef;
@@ -536,13 +615,13 @@ const CongkakBoard = ({ onMenuOpen }) => {
     } else {
       await updateCursorPositionLower(holeRefs, currentIndex, 0);
     }
-    if (resetRequestedRef.current) return; // Abort check
+    if (shouldAbort()) return;
     console.log("Starting turn based sowing")
     console.log("Seeds in hands: ", seedsInHand);
     while (seedsInHand > 0) {
-      // Check for reset abort
-      if (resetRequestedRef.current) {
-        console.log(`[ABORT] Sowing aborted by reset`);
+      // Check for pause/reset abort
+      if (shouldAbort()) {
+        console.log(`[ABORT] Sowing aborted`);
         return;
       }
       /** ============================================
@@ -592,7 +671,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
         await updateCursorPositionLower(holeRefs, currentIndex, verticalAdjustment);
       }
 
-      if (resetRequestedRef.current) return; // Abort check
+      if (shouldAbort()) return;
 
       // Update holes - read latest state, modify, write back
       newSeeds = [...seedsRef.current];
@@ -609,7 +688,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
        * ===========================================*/
       if (seedsInHand === 0 && newSeeds[currentIndex] > 1) {
         await new Promise(resolve => setTimeout(resolve, CONTINUE_SOWING_DELAY)); // Animation delay
-        if (resetRequestedRef.current) return; // Abort check
+        if (shouldAbort()) return;
         // Read latest state for continue sowing
         newSeeds = [...seedsRef.current];
         seedsInHand = newSeeds[currentIndex]; // Pick up all seeds from the current hole
@@ -683,7 +762,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
         console.log(`[SEEDS] Capture: pickup opposite hole ${oppositeIndex} | total captured: ${capturedSeeds}`);
 
         await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY)); // Animation delay
-        if (resetRequestedRef.current) return; // Abort check
+        if (shouldAbort()) return;
         // Send captured seeds to House
         // Animate cursor to the appropriate house and add captured seeds
         if (isUpperPlayer) {
@@ -771,8 +850,17 @@ const CongkakBoard = ({ onMenuOpen }) => {
 
   return (
     <div className='app-wrapper'>
+      {/* Start button overlay */}
+      {showStartButton && (
+        <div className="start-overlay">
+          <button className="start-button" onClick={handleStartClick}>
+            {t('game.start', language) || 'START'}
+          </button>
+        </div>
+      )}
+
       {/* Countdown overlay */}
-      {showCountdown && <Countdown onComplete={handleCountdownComplete} />}
+      {showCountdown && <Countdown key={countdownKey} onComplete={handleCountdownComplete} />}
 
       {/* Menu Button */}
       {onMenuOpen && (
@@ -781,8 +869,8 @@ const CongkakBoard = ({ onMenuOpen }) => {
         </button>
       )}
 
-      {/* Quick Reset Button (dev only) */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* Reset Button - visible during gameplay */}
+      {!showStartButton && !showCountdown && (
         <button className='reset-button' onClick={handleQuickReset}>
           <i className="fa fa-refresh"></i>
         </button>
@@ -837,6 +925,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
               left={cursorLeftUpper}
               visible={cursorVisibilityUpper.visible}
               canMove={cursorVisibilityUpper.canMove}
+              disableTransition={disableCursorTransition}
               seedCount={currentSeedsInHandUpper}
               isTopTurn={true}
               color={"#510400"}
@@ -847,6 +936,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
               left={cursorLeftLower}
               visible={cursorVisibilityLower.visible}
               canMove={cursorVisibilityLower.canMove}
+              disableTransition={disableCursorTransition}
               seedCount={currentSeedsInHandLower}
               isTopTurn={false}
               color={"yellow"}
