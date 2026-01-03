@@ -5,6 +5,8 @@ const translations = {
   'menu.settings': { EN: 'Settings', BM: 'Tetapan' },
   'menu.title': { EN: 'Congkak', BM: 'Congkak' },
   'menu.subtitle': { EN: 'Traditional Malaysian Game', BM: 'Permainan Tradisional Malaysia' },
+  'menu.quickMatch': { EN: 'Quick Match', BM: 'Perlawanan Pantas' },
+  'menu.traditional': { EN: 'Traditional', BM: 'Tradisional' },
 
   // Game UI
   'game.start': { EN: 'START', BM: 'MULA' },
@@ -61,6 +63,24 @@ const translations = {
   'settings.title': { EN: 'Settings', BM: 'Tetapan' },
   'settings.language': { EN: 'Language', BM: 'Bahasa' },
   'settings.close': { EN: 'Close', BM: 'Tutup' },
+
+  // Round end (Traditional mode)
+  'round.end': { EN: 'Round Complete', BM: 'Pusingan Selesai' },
+  'round.continue': { EN: 'Continue', BM: 'Teruskan' },
+  'round.endMatch': { EN: 'End Match', BM: 'Tamat Perlawanan' },
+  'round.upperSeeds': { EN: 'Dark Seeds', BM: 'Biji Gelap' },
+  'round.lowerSeeds': { EN: 'White Seeds', BM: 'Biji Putih' },
+  'round.number': { EN: 'Round', BM: 'Pusingan' },
+
+  // Match end (Traditional mode)
+  'match.winner': { EN: 'Match Winner', BM: 'Pemenang Perlawanan' },
+  'match.domination': { EN: 'Total Domination!', BM: 'Penguasaan Penuh!' },
+  'match.conceded': { EN: 'Conceded', BM: 'Mengalah' },
+  'match.playAgain': { EN: 'Play Again', BM: 'Main Lagi' },
+  'match.mainMenu': { EN: 'Main Menu', BM: 'Menu Utama' },
+
+  // Concede
+  'game.concede': { EN: 'Concede', BM: 'Mengalah' },
 };
 
 export const t = (key, language) => {

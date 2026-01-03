@@ -7,11 +7,13 @@ import { LanguageProvider } from './context/LanguageContext';
 
 const App = () => {
   const [gameStarted, setGameStarted] = useState(false);
+  const [gameMode, setGameMode] = useState('quick');
   const [showMenuOverlay, setShowMenuOverlay] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const handlePlay = () => {
+  const handlePlay = (mode) => {
+    setGameMode(mode);
     setGameStarted(true);
     setShowMenuOverlay(false);
   };
@@ -37,7 +39,7 @@ const App = () => {
 
         {gameStarted && (
           <>
-            <CongkakBoard onMenuOpen={handleOpenMenu} />
+            <CongkakBoard gameMode={gameMode} onMenuOpen={handleOpenMenu} />
 
             {showMenuOverlay && (
               <HomeMenu

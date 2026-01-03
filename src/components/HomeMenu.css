@@ -89,6 +89,37 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Mode Selection */
+.home-menu__mode-select {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-menu__mode-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: rgba(235, 235, 208, 0.5);
+  border: 2px solid rgba(235, 235, 208, 0.3);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.home-menu__mode-btn:hover {
+  color: #EBEBD0;
+  border-color: rgba(235, 235, 208, 0.6);
+}
+
+.home-menu__mode-btn--active {
+  background-color: #4d6a2b;
+  border-color: #6d8a4b;
+  color: #EBEBD0;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(77, 106, 43, 0.5);
+}
+
 /* Navigation */
 .home-menu__nav {
   display: flex;

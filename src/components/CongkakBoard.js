@@ -35,10 +35,13 @@ const {
   COUNTDOWN,
   FREEPLAY,
   TURN_BASED_SELECT,
-  TURN_BASED_SOWING
+  TURN_BASED_SOWING,
+  ROUND_END,
+  REDISTRIBUTING,
+  MATCH_END
 } = gamePhaseConfig;
 
-const CongkakBoard = ({ onMenuOpen }) => {
+const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const { language } = useLanguage();
 
   // Seed event logging for debugging
@@ -108,6 +111,24 @@ const CongkakBoard = ({ onMenuOpen }) => {
   
   const [isGameOver, setIsGameOver] = useState(false);
   const [outcomeMessage, setOutcomeMessage] = useState('');
+
+  // Traditional mode state
+  const [currentRound, setCurrentRound] = useState(1);
+  const [burnedHolesUpper, setBurnedHolesUpper] = useState([false, false, false, false, false, false, false]);
+  const [burnedHolesLower, setBurnedHolesLower] = useState([false, false, false, false, false, false, false]);
+  const [matchEnded, setMatchEnded] = useState(false);
+  const [matchWinner, setMatchWinner] = useState(null);
+  const [matchEndReason, setMatchEndReason] = useState(''); // 'domination', 'concession', 'voluntary'
+
+  // Helper to check if a hole is burned
+  const isHoleBurned = (index) => {
+    if (index >= 0 && index <= 6) {
+      return burnedHolesUpper[index];
+    } else if (index >= 7 && index <= 13) {
+      return burnedHolesLower[index - 7];
+    }
+    return false;
+  };
 
   const gameContainerRef = useRef(null);
   

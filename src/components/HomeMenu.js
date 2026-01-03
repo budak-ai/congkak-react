@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../config/translations';
 import LanguageSelector from './LanguageSelector';
@@ -6,11 +6,16 @@ import './HomeMenu.css';
 
 const HomeMenu = ({ onPlay, onRules, onSettings, isOverlay = false, onClose }) => {
   const { language } = useLanguage();
+  const [selectedMode, setSelectedMode] = useState('quick');
 
   const handleOverlayClick = (e) => {
     if (isOverlay && e.target === e.currentTarget) {
       onClose?.();
     }
+  };
+
+  const handlePlay = () => {
+    onPlay(selectedMode);
   };
 
   return (
@@ -41,8 +46,25 @@ const HomeMenu = ({ onPlay, onRules, onSettings, isOverlay = false, onClose }) =
           </div>
         </div>
 
+        {!isOverlay && (
+          <div className="home-menu__mode-select">
+            <button
+              className={`home-menu__mode-btn ${selectedMode === 'quick' ? 'home-menu__mode-btn--active' : ''}`}
+              onClick={() => setSelectedMode('quick')}
+            >
+              {t('menu.quickMatch', language)}
+            </button>
+            <button
+              className={`home-menu__mode-btn ${selectedMode === 'traditional' ? 'home-menu__mode-btn--active' : ''}`}
+              onClick={() => setSelectedMode('traditional')}
+            >
+              {t('menu.traditional', language)}
+            </button>
+          </div>
+        )}
+
         <nav className="home-menu__nav">
-          <button className="home-menu__button home-menu__button--primary" onClick={onPlay}>
+          <button className="home-menu__button home-menu__button--primary" onClick={handlePlay}>
             {t('menu.play', language)}
           </button>
           <button className="home-menu__button" onClick={onRules}>
