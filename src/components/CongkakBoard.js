@@ -13,6 +13,7 @@ import { t } from '../config/translations';
 import { handleWrongSelection } from '../utils/animation';
 import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
 import { validateSeedCount } from '../utils/seedValidator';
+import { useSeedEventLog } from '../hooks/useSeedEventLog';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 
@@ -39,6 +40,9 @@ const {
 
 const CongkakBoard = ({ onMenuOpen }) => {
   const { language } = useLanguage();
+
+  // Seed event logging for debugging
+  const { eventLog, logVersion, logEvent, snapshot, clearLog } = useSeedEventLog();
 
   const [seeds, setSeeds] = useState(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT)); // 14 holes excluding houses
   const seedsRef = useRef(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT)); // Ref for real-time sync in freeplay
@@ -121,21 +125,49 @@ const CongkakBoard = ({ onMenuOpen }) => {
     setModalOpen(!isModalOpen);
   };
 
-  // Helper to update seeds state and ref atomically
-  const updateSeeds = (newSeeds) => {
+  // Helper to update seeds state and ref atomically (with optional logging)
+  const updateSeeds = (newSeeds, context = null) => {
     seedsRef.current = newSeeds;
     setSeeds([...newSeeds]);
+
+    // Log if context provided
+    if (context) {
+      logEvent('seeds', context, {
+        seeds: newSeeds,
+        topHouse: topHouseSeedsRef.current,
+        lowHouse: lowHouseSeedsRef.current,
+        seedsInHand: currentSeedsInHandUpperRef.current + currentSeedsInHandLowerRef.current,
+      });
+    }
   };
 
-  // Helpers to update house seeds state and ref atomically
-  const updateTopHouseSeeds = (value) => {
+  // Helpers to update house seeds state and ref atomically (with optional logging)
+  const updateTopHouseSeeds = (value, context = null) => {
     topHouseSeedsRef.current = value;
     setTopHouseSeeds(value);
+
+    if (context) {
+      logEvent('topHouse', context, {
+        seeds: seedsRef.current,
+        topHouse: value,
+        lowHouse: lowHouseSeedsRef.current,
+        seedsInHand: currentSeedsInHandUpperRef.current + currentSeedsInHandLowerRef.current,
+      });
+    }
   };
 
-  const updateLowHouseSeeds = (value) => {
+  const updateLowHouseSeeds = (value, context = null) => {
     lowHouseSeedsRef.current = value;
     setLowHouseSeeds(value);
+
+    if (context) {
+      logEvent('lowHouse', context, {
+        seeds: seedsRef.current,
+        topHouse: topHouseSeedsRef.current,
+        lowHouse: value,
+        seedsInHand: currentSeedsInHandUpperRef.current + currentSeedsInHandLowerRef.current,
+      });
+    }
   };
 
   // Helpers to update seeds in hand state and ref atomically
@@ -188,6 +220,9 @@ const CongkakBoard = ({ onMenuOpen }) => {
 
   // Debug panel handler for applying test scenarios
   const handleApplyScenario = (scenario) => {
+    // Initialize snapshot for diff tracking
+    snapshot(scenario.seeds, scenario.topHouseSeeds, scenario.lowHouseSeeds);
+
     updateSeeds([...scenario.seeds]);
     updateTopHouseSeeds(scenario.topHouseSeeds);
     updateLowHouseSeeds(scenario.lowHouseSeeds);
@@ -211,21 +246,29 @@ const CongkakBoard = ({ onMenuOpen }) => {
     updateFreeplayWaitingLower(false);
     firstToEndRef.current = null;
     setResetCursor(!resetCursor);
+
+    // Log scenario application
+    logEvent('scenario', scenario.name || 'custom', {
+      seeds: scenario.seeds,
+      topHouse: scenario.topHouseSeeds,
+      lowHouse: scenario.lowHouseSeeds,
+      seedsInHand: 0,
+    });
   };
 
   // Debug panel handlers for individual board modifications
   const handleUpdateHole = (index, value) => {
     const newSeeds = [...seedsRef.current];
     newSeeds[index] = value;
-    updateSeeds(newSeeds);
+    updateSeeds(newSeeds, `debug: hole[${index}]=${value}`);
   };
 
   const handleUpdateTopHouse = (value) => {
-    updateTopHouseSeeds(value);
+    updateTopHouseSeeds(value, `debug: topHouse=${value}`);
   };
 
   const handleUpdateLowHouse = (value) => {
-    updateLowHouseSeeds(value);
+    updateLowHouseSeeds(value, `debug: lowHouse=${value}`);
   };
 
   // Quick reset handler - snappy immediate reset
@@ -846,6 +889,14 @@ const CongkakBoard = ({ onMenuOpen }) => {
     const finalTotal = finalSeeds.reduce((a, b) => a + b, 0) + finalTopHouse + finalLowHouse + upperInHand + lowerInHand;
     console.log(`[SEEDS] === ${isUpperPlayer ? 'UPPER' : 'LOWER'} SOWING END === | phase: ${gamePhase} | upperHouse: ${finalTopHouse} | lowerHouse: ${finalLowHouse} | TOTAL: ${finalTotal}`);
     validateSeedCount(finalSeeds, finalTopHouse, finalLowHouse, 'sowing end');
+
+    // Log checkpoint for event log
+    logEvent('checkpoint', `${isUpperPlayer ? 'UPPER' : 'LOWER'} sowing end`, {
+      seeds: finalSeeds,
+      topHouse: finalTopHouse,
+      lowHouse: finalLowHouse,
+      seedsInHand: upperInHand + lowerInHand,
+    });
   };
 
   return (
@@ -974,6 +1025,8 @@ const CongkakBoard = ({ onMenuOpen }) => {
         onUpdateHole={handleUpdateHole}
         onUpdateTopHouse={handleUpdateTopHouse}
         onUpdateLowHouse={handleUpdateLowHouse}
+        eventLog={eventLog}
+        onClearLog={clearLog}
       />
     </div>
   );

@@ -51,6 +51,79 @@ const TEST_SCENARIOS = {
 
 const INITIAL_SEEDS = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
 
+/**
+ * Format a diff value with color coding
+ */
+const DiffValue = ({ value }) => {
+  if (value === 0) return <span className="diff-zero">·</span>;
+  if (value > 0) return <span className="diff-positive">+{value}</span>;
+  return <span className="diff-negative">{value}</span>;
+};
+
+/**
+ * Render a single event log entry
+ */
+const EventLogEntry = ({ event, isExpanded, onToggle }) => {
+  const statusIcon = event.isValid ? '✓' : '⚠️';
+  const statusClass = event.isValid ? 'event-valid' : 'event-invalid';
+
+  // Summarize the diff
+  const changedHoles = event.seedsDiff
+    .map((d, i) => d !== 0 ? `[${i}]${d > 0 ? '+' : ''}${d}` : null)
+    .filter(Boolean);
+
+  const houseDiffs = [];
+  if (event.houseDiff.top !== 0) houseDiffs.push(`T${event.houseDiff.top > 0 ? '+' : ''}${event.houseDiff.top}`);
+  if (event.houseDiff.low !== 0) houseDiffs.push(`L${event.houseDiff.low > 0 ? '+' : ''}${event.houseDiff.low}`);
+
+  return (
+    <div className={`event-entry ${statusClass}`} onClick={onToggle}>
+      <div className="event-header">
+        <span className="event-time">{event.timestamp}</span>
+        <span className="event-status">{statusIcon}</span>
+        <span className="event-action">{event.action}</span>
+        <span className="event-context">{event.context}</span>
+        <span className="event-total">= {event.after.total}</span>
+      </div>
+
+      {isExpanded && (
+        <div className="event-details">
+          <div className="event-diff-summary">
+            {changedHoles.length > 0 && (
+              <span className="event-holes-diff">Holes: {changedHoles.join(' ')}</span>
+            )}
+            {houseDiffs.length > 0 && (
+              <span className="event-houses-diff">Houses: {houseDiffs.join(' ')}</span>
+            )}
+          </div>
+
+          <div className="event-diff-visual">
+            <div className="diff-row">
+              <span className="diff-label">Before:</span>
+              <span className="diff-seeds">[{event.before.seeds.join(',')}]</span>
+              <span className="diff-houses">T:{event.before.topHouse} L:{event.before.lowHouse}</span>
+            </div>
+            <div className="diff-row">
+              <span className="diff-label">After:</span>
+              <span className="diff-seeds">[{event.after.seeds.join(',')}]</span>
+              <span className="diff-houses">T:{event.after.topHouse} L:{event.after.lowHouse}</span>
+            </div>
+            <div className="diff-row diff-row--diff">
+              <span className="diff-label">Diff:</span>
+              <span className="diff-seeds">
+                [{event.seedsDiff.map((d, i) => <DiffValue key={i} value={d} />).reduce((prev, curr, i) => i === 0 ? [curr] : [...prev, ',', curr], [])}]
+              </span>
+              <span className="diff-houses">
+                T:<DiffValue value={event.houseDiff.top} /> L:<DiffValue value={event.houseDiff.low} />
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const DebugPanel = ({
   onApplyScenario,
   currentSeeds,
@@ -59,9 +132,12 @@ const DebugPanel = ({
   onUpdateHole,
   onUpdateTopHouse,
   onUpdateLowHouse,
+  eventLog = [],
+  onClearLog,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('state'); // 'state' | 'log' | 'edit'
+  const [expandedEventId, setExpandedEventId] = useState(null);
 
   // Only render in development
   if (process.env.NODE_ENV !== 'development') {
@@ -69,6 +145,7 @@ const DebugPanel = ({
   }
 
   const totalSeeds = currentSeeds.reduce((a, b) => a + b, 0) + topHouseSeeds + lowHouseSeeds;
+  const isValid = totalSeeds === 98;
 
   const handleHoleChange = (index, delta) => {
     const newValue = Math.max(0, currentSeeds[index] + delta);
@@ -93,36 +170,120 @@ const DebugPanel = ({
     });
   };
 
+  const toggleEventExpand = (eventId) => {
+    setExpandedEventId(expandedEventId === eventId ? null : eventId);
+  };
+
+  // Get recent invalid events count
+  const invalidCount = eventLog.filter(e => !e.isValid).length;
+
   return (
     <div className={`debug-panel ${isExpanded ? 'debug-panel--expanded' : ''}`}>
       <button
         className="debug-panel__toggle"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {isExpanded ? 'Debug ▼' : 'Debug ▲'}
+        <span>Debug {isExpanded ? '▼' : '▲'}</span>
+        <span className={`debug-panel__total ${!isValid ? 'debug-panel__warning' : ''}`}>
+          Seeds: {totalSeeds} {!isValid && '⚠️'}
+        </span>
+        {invalidCount > 0 && (
+          <span className="debug-panel__error-count">{invalidCount} errors</span>
+        )}
       </button>
 
       {isExpanded && (
         <div className="debug-panel__content">
-          <div className="debug-panel__header">
-            <div className="debug-panel__status">
-              <strong>Total Seeds:</strong> {totalSeeds}
-              {totalSeeds !== 98 && <span className="debug-panel__warning"> ⚠️ Expected 98!</span>}
-            </div>
-            <div className="debug-panel__controls">
-              <button
-                className={`debug-panel__edit-btn ${editMode ? 'debug-panel__edit-btn--active' : ''}`}
-                onClick={() => setEditMode(!editMode)}
-              >
-                {editMode ? 'Done Editing' : 'Edit Board'}
-              </button>
-              <button className="debug-panel__reset-btn" onClick={handleReset}>
-                Reset
-              </button>
-            </div>
+          {/* Tabs */}
+          <div className="debug-panel__tabs">
+            <button
+              className={`debug-panel__tab ${activeTab === 'state' ? 'debug-panel__tab--active' : ''}`}
+              onClick={() => setActiveTab('state')}
+            >
+              State
+            </button>
+            <button
+              className={`debug-panel__tab ${activeTab === 'log' ? 'debug-panel__tab--active' : ''}`}
+              onClick={() => setActiveTab('log')}
+            >
+              Event Log ({eventLog.length})
+            </button>
+            <button
+              className={`debug-panel__tab ${activeTab === 'edit' ? 'debug-panel__tab--active' : ''}`}
+              onClick={() => setActiveTab('edit')}
+            >
+              Edit Board
+            </button>
           </div>
 
-          {editMode ? (
+          {/* State Tab */}
+          {activeTab === 'state' && (
+            <div className="debug-panel__state">
+              <div className="debug-panel__status">
+                <strong>Total Seeds:</strong> {totalSeeds}
+                {!isValid && <span className="debug-panel__warning"> ⚠️ Expected 98!</span>}
+              </div>
+
+              <div className="debug-panel__seeds">
+                <strong>Upper (0-6):</strong> [{currentSeeds.slice(0, 7).join(', ')}]
+              </div>
+              <div className="debug-panel__seeds">
+                <strong>Lower (7-13):</strong> [{currentSeeds.slice(7, 14).join(', ')}]
+              </div>
+
+              <div className="debug-panel__houses">
+                <span>Upper House: {topHouseSeeds}</span>
+                <span>Lower House: {lowHouseSeeds}</span>
+              </div>
+
+              <div className="debug-panel__scenarios">
+                <strong>Scenarios:</strong>
+                {Object.entries(TEST_SCENARIOS).map(([key, scenario]) => (
+                  <button
+                    key={key}
+                    className="debug-panel__scenario-btn"
+                    onClick={() => onApplyScenario(scenario)}
+                    title={scenario.description}
+                  >
+                    {scenario.name}
+                  </button>
+                ))}
+                <button className="debug-panel__reset-btn" onClick={handleReset}>
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Event Log Tab */}
+          {activeTab === 'log' && (
+            <div className="debug-panel__log">
+              <div className="debug-panel__log-header">
+                <span>Last {eventLog.length} events (click to expand)</span>
+                <button className="debug-panel__clear-btn" onClick={onClearLog}>
+                  Clear Log
+                </button>
+              </div>
+
+              <div className="debug-panel__log-list">
+                {eventLog.length === 0 ? (
+                  <div className="debug-panel__log-empty">No events logged yet</div>
+                ) : (
+                  [...eventLog].reverse().map((event) => (
+                    <EventLogEntry
+                      key={event.id}
+                      event={event}
+                      isExpanded={expandedEventId === event.id}
+                      onToggle={() => toggleEventExpand(event.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Edit Tab */}
+          {activeTab === 'edit' && (
             <div className="debug-panel__editor">
               {/* Houses */}
               <div className="debug-panel__houses-editor">
@@ -187,33 +348,12 @@ const DebugPanel = ({
                   ))}
                 </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <div className="debug-panel__seeds">
-                <strong>Holes:</strong> [{currentSeeds.join(', ')}]
-              </div>
 
-              <div className="debug-panel__houses">
-                <span>Upper House: {topHouseSeeds}</span>
-                <span>Lower House: {lowHouseSeeds}</span>
-              </div>
-            </>
-          )}
-
-          <div className="debug-panel__scenarios">
-            <strong>Scenarios:</strong>
-            {Object.entries(TEST_SCENARIOS).map(([key, scenario]) => (
-              <button
-                key={key}
-                className="debug-panel__scenario-btn"
-                onClick={() => onApplyScenario(scenario)}
-                title={scenario.description}
-              >
-                {scenario.name}
+              <button className="debug-panel__reset-btn" onClick={handleReset} style={{ marginTop: '1rem' }}>
+                Reset to Initial State
               </button>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
