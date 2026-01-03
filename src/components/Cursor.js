@@ -1,7 +1,7 @@
 import React from "react";
 import "./Cursor.css";
 
-const Cursor = ({ color, shake, top, left, visible, seedCount, isTopTurn }) => {
+const Cursor = ({ color, shake, top, left, visible, canMove, seedCount, isTopTurn }) => {
   const svgCursor = (
     // Inline SVG code for LOWER cursor
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 440">
@@ -27,8 +27,12 @@ const Cursor = ({ color, shake, top, left, visible, seedCount, isTopTurn }) => {
     fontWeight: 'bold'
   };
 
+  const shakeClass = shake ? (isTopTurn ? 'shake-animation-flipped' : 'shake-animation') : '';
+  const pulseClass = canMove ? (isTopTurn ? 'pulse-glow-flipped' : 'pulse-glow') : '';
+  const flippedClass = isTopTurn ? 'flipped' : '';
+
   return (
-    <div className={`hand-cursor ${shake ? (isTopTurn? 'shake-animation-flipped' : 'shake-animation') : '' }`} style={cursorStyle}>
+    <div className={`hand-cursor ${flippedClass} ${shakeClass} ${pulseClass}`} style={cursorStyle}>
       {svgCursor}
       {seedCount >= 0 && <span className="seeds-count" style={seedCountStyle}>{seedCount}</span>}
     </div>

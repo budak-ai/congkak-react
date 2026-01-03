@@ -385,23 +385,32 @@ const CongkakBoard = ({ onMenuOpen }) => {
   *                    Cursor visibility
   * ==========================================================*/
   useEffect(() => {
-    // Both cursors visible during freeplay/countdown
-    const bothPlayersActive = gamePhase === COUNTDOWN || gamePhase === FREEPLAY;
-
-    // for upper player
-    if (bothPlayersActive) {
-      setCursorVisibilityUpper({ visible: true });
+    // In freeplay: visible unless waiting, in turn-based: visible only if it's your turn
+    if (gamePhase === COUNTDOWN) {
+      setCursorVisibilityUpper({ visible: true, canMove: false });
+      setCursorVisibilityLower({ visible: true, canMove: false });
+    } else if (gamePhase === FREEPLAY) {
+      // Hide cursor when waiting in freeplay
+      setCursorVisibilityUpper({
+        visible: !freeplayWaitingUpper,
+        canMove: !freeplayWaitingUpper && !isSowingUpper
+      });
+      setCursorVisibilityLower({
+        visible: !freeplayWaitingLower,
+        canMove: !freeplayWaitingLower && !isSowingLower
+      });
     } else {
-      setCursorVisibilityUpper({ visible: currentTurn === PLAYER_UPPER });
+      // Turn-based mode
+      setCursorVisibilityUpper({
+        visible: currentTurn === PLAYER_UPPER,
+        canMove: currentTurn === PLAYER_UPPER && gamePhase === TURN_BASED_SELECT
+      });
+      setCursorVisibilityLower({
+        visible: currentTurn === PLAYER_LOWER,
+        canMove: currentTurn === PLAYER_LOWER && gamePhase === TURN_BASED_SELECT
+      });
     }
-
-    // for lower player
-    if (bothPlayersActive) {
-      setCursorVisibilityLower({ visible: true });
-    } else {
-      setCursorVisibilityLower({ visible: currentTurn === PLAYER_LOWER });
-    }
-  }, [gamePhase, currentTurn]);
+  }, [gamePhase, currentTurn, freeplayWaitingUpper, freeplayWaitingLower, isSowingUpper, isSowingLower]);
 
 
   /**=========================================================
@@ -827,6 +836,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
               top={cursorTopUpper}
               left={cursorLeftUpper}
               visible={cursorVisibilityUpper.visible}
+              canMove={cursorVisibilityUpper.canMove}
               seedCount={currentSeedsInHandUpper}
               isTopTurn={true}
               color={"#510400"}
@@ -836,6 +846,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
               top={cursorTopLower}
               left={cursorLeftLower}
               visible={cursorVisibilityLower.visible}
+              canMove={cursorVisibilityLower.canMove}
               seedCount={currentSeedsInHandLower}
               isTopTurn={false}
               color={"yellow"}
