@@ -130,6 +130,33 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     return false;
   };
 
+  // Get next valid hole, skipping burned holes (for traditional mode)
+  const getNextValidHole = (currentIndex) => {
+    let next = currentIndex;
+    let iterations = 0;
+    const maxIterations = 20; // Safety limit
+
+    do {
+      // Normal increment
+      next = (next + 1) % HOLE_NUMBERS;
+
+      // Check if this hole is burned
+      const isBurned = (next >= 0 && next <= 6)
+        ? burnedHolesUpper[next]
+        : burnedHolesLower[next - 7];
+
+      // If not burned, this is valid
+      if (!isBurned) {
+        return { nextIndex: next, skipped: iterations > 0 };
+      }
+
+      iterations++;
+    } while (iterations < maxIterations);
+
+    // Fallback (shouldn't happen unless all holes burned)
+    return { nextIndex: next, skipped: false };
+  };
+
   const gameContainerRef = useRef(null);
   
   const verticalPosUpper = config.VERTICAL_POS_UPPER;
@@ -268,6 +295,18 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     firstToEndRef.current = null;
     setResetCursor(!resetCursor);
 
+    // Apply burned holes if specified in scenario
+    if (scenario.burnedHolesUpper !== undefined) {
+      setBurnedHolesUpper([...scenario.burnedHolesUpper]);
+    } else {
+      setBurnedHolesUpper([false, false, false, false, false, false, false]);
+    }
+    if (scenario.burnedHolesLower !== undefined) {
+      setBurnedHolesLower([...scenario.burnedHolesLower]);
+    } else {
+      setBurnedHolesLower([false, false, false, false, false, false, false]);
+    }
+
     // Log scenario application
     logEvent('scenario', scenario.name || 'custom', {
       seeds: scenario.seeds,
@@ -356,6 +395,11 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const handleSButtonPress = async (index) => {
     // Block input when paused
     if (gamePausedRef.current) return;
+    // Cannot select burned hole in traditional mode
+    if (gameMode === 'traditional' && isHoleBurned(index)) {
+      handleWrongSelection(setShakeCursorUpper, setShowSelectionMessage);
+      return;
+    }
     if (!isSowingUpper) {
       // Freeplay mode - both players sow independently using turn-based logic
       if (gamePhase === FREEPLAY) {
@@ -383,6 +427,11 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const handleArrowDownPress = async (index) => {
     // Block input when paused
     if (gamePausedRef.current) return;
+    // Cannot select burned hole in traditional mode
+    if (gameMode === 'traditional' && isHoleBurned(index)) {
+      handleWrongSelection(setShakeCursorLower, setShowSelectionMessage);
+      return;
+    }
     if (!isSowingLower) {
       // Freeplay mode - both players sow independently using turn-based logic
       if (gamePhase === FREEPLAY) {
@@ -564,12 +613,24 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       if (!isSowingUpper) {
         if (event.key === 'a' || event.key === 'A') {
           newIndexUpper = Math.max(0, currentHoleIndexUpper - 1); // decrease
+          // Skip burned holes in traditional mode
+          if (gameMode === 'traditional') {
+            while (newIndexUpper > 0 && isHoleBurned(newIndexUpper)) {
+              newIndexUpper--;
+            }
+          }
         } else if (event.key === 'd' || event.key === 'D') {
           newIndexUpper = Math.min(MAX_INDEX_UPPER, currentHoleIndexUpper + 1); // increase
+          // Skip burned holes in traditional mode
+          if (gameMode === 'traditional') {
+            while (newIndexUpper < MAX_INDEX_UPPER && isHoleBurned(newIndexUpper)) {
+              newIndexUpper++;
+            }
+          }
         }
         setCurrentHoleIndexUpper(newIndexUpper);
         updateCursorPositionUpper(holeRefs, newIndexUpper, verticalPosUpper);
-        
+
         // Start sowing
         if (event.key === 's' || event.key === 'S') {
           if (gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER) {
@@ -583,8 +644,20 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         // Handle PlayerLower's left and right movement (reversed)
         if (event.key === 'ArrowLeft') {
           newIndexLower = Math.min(MAX_INDEX_LOWER, currentHoleIndexLower + 1); // Increment index
+          // Skip burned holes in traditional mode
+          if (gameMode === 'traditional') {
+            while (newIndexLower < MAX_INDEX_LOWER && isHoleBurned(newIndexLower)) {
+              newIndexLower++;
+            }
+          }
         } else if (event.key === 'ArrowRight') {
           newIndexLower = Math.max(MIN_INDEX_LOWER, currentHoleIndexLower - 1); // Decrement index
+          // Skip burned holes in traditional mode
+          if (gameMode === 'traditional') {
+            while (newIndexLower > MIN_INDEX_LOWER && isHoleBurned(newIndexLower)) {
+              newIndexLower--;
+            }
+          }
         }
         setCurrentHoleIndexLower(newIndexLower);
         updateCursorPositionLower(holeRefs, newIndexLower, verticalPosLower);
@@ -725,8 +798,22 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       // Move to the next hole in a circular way
       if (justFilledHome) {
         justFilledHome = false;
+        // After house, check if minIndex is burned (traditional mode)
+        if (gameMode === 'traditional' && isHoleBurned(currentIndex)) {
+          const result = getNextValidHole(currentIndex);
+          currentIndex = result.nextIndex;
+        }
       } else {
-        currentIndex = (currentIndex + 1) % HOLE_NUMBERS;
+        if (gameMode === 'traditional') {
+          const result = getNextValidHole(currentIndex);
+          currentIndex = result.nextIndex;
+          // Add delay for skipped holes to maintain rhythm
+          if (result.skipped) {
+            await new Promise(resolve => setTimeout(resolve, animationDelay));
+          }
+        } else {
+          currentIndex = (currentIndex + 1) % HOLE_NUMBERS;
+        }
       }
 
       if (isUpperPlayer) {
@@ -791,6 +878,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
 
         // Calculate the opposite index
         const oppositeIndex = MAX_INDEX_LOWER - currentIndex;
+
+        // Check if opposite hole is burned (no capture possible in traditional mode)
+        if (gameMode === 'traditional' && isHoleBurned(oppositeIndex)) continue;
 
         // Read latest state for capture check
         newSeeds = [...seedsRef.current];
@@ -981,6 +1071,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
                 onClick={(index) => {handleSButtonPress(index)}}
                 refs={holeRefs.current}
                 selectedHole={null}
+                burnedHoles={burnedHolesUpper}
               />
               <Row
                 seeds={seeds.slice(MIN_INDEX_LOWER).reverse()}
@@ -988,6 +1079,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
                 onClick={(index) => {handleArrowDownPress(index)}}
                 refs={holeRefs.current}
                 selectedHole={null}
+                burnedHoles={burnedHolesLower}
               />
             </div>
             <House position="upper" seedCount={topHouseSeeds} ref={topHouseRef} isUpper={true}/>

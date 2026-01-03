@@ -47,6 +47,43 @@ const TEST_SCENARIOS = {
     topHouseSeeds: 49,
     lowHouseSeeds: 0,
   },
+  // Burned hole scenarios for traditional mode testing
+  burnedUpper2: {
+    name: 'Burned Upper (2)',
+    description: 'Upper has 2 burned holes (0-1)',
+    seeds: [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+    topHouseSeeds: 0,
+    lowHouseSeeds: 0,
+    burnedHolesUpper: [true, true, false, false, false, false, false],
+    burnedHolesLower: [false, false, false, false, false, false, false],
+  },
+  burnedLower3: {
+    name: 'Burned Lower (3)',
+    description: 'Lower has 3 burned holes (7-9)',
+    seeds: [7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7, 7],
+    topHouseSeeds: 0,
+    lowHouseSeeds: 0,
+    burnedHolesUpper: [false, false, false, false, false, false, false],
+    burnedHolesLower: [true, true, true, false, false, false, false],
+  },
+  burnedBoth: {
+    name: 'Burned Both',
+    description: 'Both players have burned holes',
+    seeds: [0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7, 7],
+    topHouseSeeds: 0,
+    lowHouseSeeds: 0,
+    burnedHolesUpper: [true, true, false, false, false, false, false],
+    burnedHolesLower: [true, true, true, false, false, false, false],
+  },
+  nearDomination: {
+    name: 'Near Domination',
+    description: 'Upper has 6 burned holes (1 left)',
+    seeds: [0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7],
+    topHouseSeeds: 0,
+    lowHouseSeeds: 0,
+    burnedHolesUpper: [true, true, true, true, true, true, false],
+    burnedHolesLower: [false, false, false, false, false, false, false],
+  },
 };
 
 const INITIAL_SEEDS = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
