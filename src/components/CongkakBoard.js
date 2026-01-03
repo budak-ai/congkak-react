@@ -53,8 +53,14 @@ const CongkakBoard = ({ onMenuOpen }) => {
   const [showCountdown, setShowCountdown] = useState(true);
   const [freeplayWaitingUpper, setFreeplayWaitingUpper] = useState(false); // Upper's turn ended, waiting
   const [freeplayWaitingLower, setFreeplayWaitingLower] = useState(false); // Lower's turn ended, waiting
+  const freeplayWaitingUpperRef = useRef(false); // Ref for real-time waiting state
+  const freeplayWaitingLowerRef = useRef(false); // Ref for real-time waiting state
   const firstToEndRef = useRef(null); // Track who ended first in freeplay
   const resetRequestedRef = useRef(false); // Flag to abort sowing on reset
+
+  // Refs for real-time sowing state (to avoid stale closure in freeplay transition)
+  const isSowingUpperRef = useRef(false);
+  const isSowingLowerRef = useRef(false);
 
 
   const [cursorVisibilityUpper, setCursorVisibilityUpper] = useState({ visible: true });
@@ -138,6 +144,28 @@ const CongkakBoard = ({ onMenuOpen }) => {
     setCurrentSeedsInHandLower(value);
   };
 
+  // Helpers to update sowing state and ref atomically
+  const updateIsSowingUpper = (value) => {
+    isSowingUpperRef.current = value;
+    setIsSowingUpper(value);
+  };
+
+  const updateIsSowingLower = (value) => {
+    isSowingLowerRef.current = value;
+    setIsSowingLower(value);
+  };
+
+  // Helpers to update freeplay waiting state and ref atomically
+  const updateFreeplayWaitingUpper = (value) => {
+    freeplayWaitingUpperRef.current = value;
+    setFreeplayWaitingUpper(value);
+  };
+
+  const updateFreeplayWaitingLower = (value) => {
+    freeplayWaitingLowerRef.current = value;
+    setFreeplayWaitingLower(value);
+  };
+
   // Countdown completion handler for freeplay mode
   const handleCountdownComplete = () => {
     setShowCountdown(false);
@@ -163,10 +191,10 @@ const CongkakBoard = ({ onMenuOpen }) => {
     setIsGameOver(false);
     setOutcomeMessage('');
     setCurrentTurn(null);
-    setIsSowingUpper(false);
-    setIsSowingLower(false);
-    setFreeplayWaitingUpper(false);
-    setFreeplayWaitingLower(false);
+    updateIsSowingUpper(false);
+    updateIsSowingLower(false);
+    updateFreeplayWaitingUpper(false);
+    updateFreeplayWaitingLower(false);
     firstToEndRef.current = null;
     setResetCursor(!resetCursor);
   };
@@ -204,10 +232,10 @@ const CongkakBoard = ({ onMenuOpen }) => {
     setIsGameOver(false);
     setOutcomeMessage('');
     setCurrentTurn(null);
-    setIsSowingUpper(false);
-    setIsSowingLower(false);
-    setFreeplayWaitingUpper(false);
-    setFreeplayWaitingLower(false);
+    updateIsSowingUpper(false);
+    updateIsSowingLower(false);
+    updateFreeplayWaitingUpper(false);
+    updateFreeplayWaitingLower(false);
     firstToEndRef.current = null;
     setPassedHouse(0);
 
@@ -456,7 +484,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
     // Determine player-specific states and actions
     const isUpperPlayer = player === PLAYER_UPPER;
     const currentHouseRef = isUpperPlayer ? topHouseRef : lowHouseRef;
-    const setIsSowing = isUpperPlayer ? setIsSowingUpper : setIsSowingLower;
+    const updateIsSowing = isUpperPlayer ? updateIsSowingUpper : updateIsSowingLower;
     const setShakeCursor = isUpperPlayer ? setShakeCursorUpper : setShakeCursorLower;
     const updateHouseSeeds = isUpperPlayer ? updateTopHouseSeeds : updateLowHouseSeeds;
     const getHouseSeedsRef = isUpperPlayer ? topHouseSeedsRef : lowHouseSeedsRef;
@@ -467,7 +495,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
     const minIndex = isUpperPlayer ? MIN_INDEX_LOWER : 0;
     
     // Start sowing
-    setIsSowing(true);
+    updateIsSowing(true);
     
     let currentIndex = index;
     let newSeeds = [...seedsRef.current]; // Use ref for real-time state in freeplay
@@ -483,7 +511,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
         console.log("Cannot pick empty hole. Pick again.");
         handleWrongSelection(setShakeCursor, setShowSelectionMessage);
         // Don't change game phase - just reject the pick
-        setIsSowing(false);
+        updateIsSowing(false);
         return;
       }
     }
@@ -528,7 +556,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
           currentIndex = minIndex;
         } else {
           getAnotherTurn = true;
-          setIsSowing(false);
+          updateIsSowing(false);
 
           // reset cursor position
           if (isUpperPlayer) {
@@ -671,7 +699,7 @@ const CongkakBoard = ({ onMenuOpen }) => {
       }
     }
     // End of sowing
-    setIsSowing(false);
+    updateIsSowing(false);
 
     // Handle game phase transitions
     if (gamePhase === FREEPLAY) {
@@ -680,32 +708,33 @@ const CongkakBoard = ({ onMenuOpen }) => {
         console.log(`[PHASE] ${isUpperPlayer ? 'UPPER' : 'LOWER'} landed in house, can pick again`);
       } else {
         // Turn ended - check if other player is still playing
-        const setWaiting = isUpperPlayer ? setFreeplayWaitingUpper : setFreeplayWaitingLower;
-        const otherWaiting = isUpperPlayer ? freeplayWaitingLower : freeplayWaitingUpper;
-        const otherSowing = isUpperPlayer ? isSowingLower : isSowingUpper;
+        // Use refs to get real-time state (avoid stale closure problem)
+        const updateWaiting = isUpperPlayer ? updateFreeplayWaitingUpper : updateFreeplayWaitingLower;
+        const otherWaitingRef = isUpperPlayer ? freeplayWaitingLowerRef : freeplayWaitingUpperRef;
+        const otherSowingRef = isUpperPlayer ? isSowingLowerRef : isSowingUpperRef;
 
-        if (otherSowing) {
+        if (otherSowingRef.current) {
           // Other player still sowing - this player waits
-          setWaiting(true);
+          updateWaiting(true);
           if (firstToEndRef.current === null) {
             firstToEndRef.current = player;
           }
           console.log(`[PHASE] ${isUpperPlayer ? 'UPPER' : 'LOWER'} turn ended, waiting for other player`);
-        } else if (otherWaiting) {
+        } else if (otherWaitingRef.current) {
           // Other player already waiting - transition to turn-based
           // First to end gets the next turn
           const nextTurn = firstToEndRef.current === PLAYER_UPPER ? PLAYER_UPPER : PLAYER_LOWER;
           setCurrentTurn(nextTurn);
           setGamePhase(TURN_BASED_SELECT);
           // Reset freeplay states
-          setFreeplayWaitingUpper(false);
-          setFreeplayWaitingLower(false);
+          updateFreeplayWaitingUpper(false);
+          updateFreeplayWaitingLower(false);
           firstToEndRef.current = null;
           console.log(`[PHASE] Both ended. Transition to TURN_BASED: ${nextTurn === PLAYER_UPPER ? 'UPPER' : 'LOWER'}'s turn`);
         } else {
           // Other player not sowing and not waiting - they haven't started yet or also just ended
           // This player waits
-          setWaiting(true);
+          updateWaiting(true);
           if (firstToEndRef.current === null) {
             firstToEndRef.current = player;
           }
