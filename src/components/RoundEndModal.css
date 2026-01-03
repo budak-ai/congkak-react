@@ -1,0 +1,98 @@
+.round-end-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(48, 46, 43, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1500;
+}
+
+.round-end-modal {
+  background-color: #EBEBD0;
+  color: #333;
+  border-radius: 12px;
+  padding: 2rem;
+  min-width: 350px;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.round-end-modal h2 {
+  margin: 0 0 0.5rem 0;
+  color: #4d6a2b;
+}
+
+.round-end-round-number {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.round-end-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.round-end-player {
+  text-align: center;
+}
+
+.round-end-player-label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.round-end-player-seeds {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #4d6a2b;
+}
+
+.round-end-player-burned {
+  font-size: 0.9rem;
+  color: #8b0000;
+  min-height: 1.2rem;
+}
+
+.round-end-vs {
+  font-size: 1.5rem;
+  color: #999;
+}
+
+.round-end-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.round-end-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: 2px solid #4d6a2b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: transparent;
+  color: #4d6a2b;
+}
+
+.round-end-btn:hover {
+  background-color: rgba(77, 106, 43, 0.1);
+}
+
+.round-end-btn--primary {
+  background-color: #4d6a2b;
+  color: #EBEBD0;
+}
+
+.round-end-btn--primary:hover {
+  background-color: #5d7a3b;
+}

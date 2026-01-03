@@ -44,6 +44,21 @@ function areBothRowsEmpty(seeds) {
   return sumUpperRow === 0 && sumLowerRow === 0;
 }
 
+// Check if round is complete (both rows empty) - for traditional mode
+export const isRoundComplete = (seeds) => {
+  return areBothRowsEmpty(seeds);
+};
+
+// Check for total domination (all 7 holes burned)
+export const checkTotalDomination = (burnedHolesUpper, burnedHolesLower) => {
+  const upperDominated = burnedHolesUpper.every(b => b);
+  const lowerDominated = burnedHolesLower.every(b => b);
+
+  if (upperDominated) return PLAYER_LOWER; // Lower wins
+  if (lowerDominated) return PLAYER_UPPER; // Upper wins
+  return null; // No domination
+};
+
 function determineOutcome(topHouseSeeds, lowHouseSeeds) {
   if (topHouseSeeds > lowHouseSeeds) {
     return 'DARK WINS';

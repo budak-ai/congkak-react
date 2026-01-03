@@ -11,7 +11,8 @@ import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../config/translations';
 import { handleWrongSelection } from '../utils/animation';
-import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd } from '../utils/helpers';
+import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd, isRoundComplete } from '../utils/helpers';
+import RoundEndModal from './RoundEndModal';
 import { validateSeedCount } from '../utils/seedValidator';
 import { useSeedEventLog } from '../hooks/useSeedEventLog';
 import config from '../config/config';
@@ -391,6 +392,23 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     });
   };
 
+  // Traditional mode: Continue to next round (redistribution happens in Phase 5)
+  const handleContinueMatch = () => {
+    // Will be implemented in Phase 5 (redistribution)
+    setGamePhase(REDISTRIBUTING);
+  };
+
+  // Traditional mode: End match voluntarily
+  const handleEndMatch = () => {
+    // Voluntary end - higher seeds wins
+    const winner = topHouseSeeds > lowHouseSeeds ? PLAYER_UPPER :
+                   lowHouseSeeds > topHouseSeeds ? PLAYER_LOWER : null;
+    setMatchWinner(winner);
+    setMatchEndReason('voluntary');
+    setMatchEnded(true);
+    setGamePhase(MATCH_END);
+  };
+
   // Define the handlers for the mobile buttons
   const handleSButtonPress = async (index) => {
     // Block input when paused
@@ -681,10 +699,18 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
 
   // GameOver Checker
   useEffect(() => {
-    if (!isSowingUpper && !isSowingLower) {
-      handleCheckGameEnd(seeds, topHouseSeeds, lowHouseSeeds, setIsGameOver, setOutcomeMessage);
+    if (!isSowingUpper && !isSowingLower && !isGameOver && !matchEnded) {
+      if (gameMode === 'traditional') {
+        // Traditional mode: check for round completion
+        if (isRoundComplete(seeds)) {
+          setGamePhase(ROUND_END);
+        }
+      } else {
+        // Quick match: existing game end logic
+        handleCheckGameEnd(seeds, topHouseSeeds, lowHouseSeeds, setIsGameOver, setOutcomeMessage);
+      }
     }
-  }, [isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds]);
+  }, [isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, gameMode, isGameOver, matchEnded]);
 
   // Skip turn if the whole row is empty
   useEffect(() => {
@@ -1121,11 +1147,24 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
             </div>
           )}
         </div>
-        {/* <Sidebar 
-            isOpen={isSidebarOpen} 
-            onToggle={() => toggleSidebar(isSidebarOpen, setSidebarOpen)} 
+        {/* <Sidebar
+            isOpen={isSidebarOpen}
+            onToggle={() => toggleSidebar(isSidebarOpen, setSidebarOpen)}
           /> */}
       </div>
+
+      {/* Round End Modal for Traditional mode */}
+      <RoundEndModal
+        isOpen={gamePhase === ROUND_END}
+        roundNumber={currentRound}
+        topHouseSeeds={topHouseSeeds}
+        lowHouseSeeds={lowHouseSeeds}
+        burnedHolesUpper={burnedHolesUpper}
+        burnedHolesLower={burnedHolesLower}
+        onContinue={handleContinueMatch}
+        onEndMatch={handleEndMatch}
+      />
+
       <div class="trademark-section">
         © 2023 <a href="https://twitter.com/ayuinmetaverse" target="_blank">AYU</a>. All Rights Reserved.
       </div>

@@ -66,14 +66,14 @@ const TEST_SCENARIOS = {
     burnedHolesUpper: [false, false, false, false, false, false, false],
     burnedHolesLower: [true, true, true, false, false, false, false],
   },
-  burnedBoth: {
-    name: 'Burned Both',
-    description: 'Both players have burned holes',
-    seeds: [0, 0, 7, 7, 7, 7, 7, 0, 0, 0, 7, 7, 7, 7],
+  burnedUpperMid: {
+    name: 'Burned Upper (Mid)',
+    description: 'Upper had 35 seeds, 2 burned holes',
+    seeds: [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
     topHouseSeeds: 0,
     lowHouseSeeds: 0,
     burnedHolesUpper: [true, true, false, false, false, false, false],
-    burnedHolesLower: [true, true, true, false, false, false, false],
+    burnedHolesLower: [false, false, false, false, false, false, false],
   },
   nearDomination: {
     name: 'Near Domination',
@@ -82,6 +82,26 @@ const TEST_SCENARIOS = {
     topHouseSeeds: 0,
     lowHouseSeeds: 0,
     burnedHolesUpper: [true, true, true, true, true, true, false],
+    burnedHolesLower: [false, false, false, false, false, false, false],
+  },
+  // Traditional mode: Near round end (very few seeds to trigger round completion)
+  traditionalNearRoundEnd: {
+    name: 'Trad: Near Round End',
+    description: 'Both rows nearly empty - 1 move to trigger round end',
+    seeds: [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+    topHouseSeeds: 38,
+    lowHouseSeeds: 58,
+    burnedHolesUpper: [true, true, false, false, false, false, false],
+    burnedHolesLower: [false, false, false, false, false, false, false],
+  },
+  // Traditional mode: Round end trigger (all holes empty)
+  traditionalRoundEnd: {
+    name: 'Trad: Round End',
+    description: 'All holes empty - immediately triggers round end modal',
+    seeds: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    topHouseSeeds: 41,
+    lowHouseSeeds: 57,
+    burnedHolesUpper: [true, false, false, false, false, false, false],
     burnedHolesLower: [false, false, false, false, false, false, false],
   },
 };
