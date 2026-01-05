@@ -395,3 +395,79 @@ body {
 .row-lower .circle.burned {
   background-color: #3a3836 !important;
 }
+
+/* Redistribution animation */
+.circle.redistributing {
+  animation: fillPulse 0.3s ease-out;
+}
+
+@keyframes fillPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0.3vw #4d6a2b;
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: inset 0 0 1vw #4d6a2b, 0 0 1vw #4d6a2b;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0.3vw #4d6a2b;
+  }
+}
+
+/* Board wrapper - contains game board and concede buttons */
+.board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+/* Concede buttons - above/below game board */
+.concede-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: 2px solid;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.9;
+}
+
+.concede-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.concede-btn i {
+  font-size: 0.85rem;
+}
+
+/* Dark player concede - purple theme */
+.concede-btn--upper {
+  background-color: #5c3d6e;
+  border-color: #4a2f5a;
+  color: #e8dff0;
+}
+
+.concede-btn--upper:hover {
+  background-color: #7a4d8f;
+  border-color: #5c3d6e;
+}
+
+/* White player concede - orange theme */
+.concede-btn--lower {
+  background-color: #c96a32;
+  border-color: #a85528;
+  color: #fff5e6;
+}
+
+.concede-btn--lower:hover {
+  background-color: #e07a3d;
+  border-color: #c96a32;
+}

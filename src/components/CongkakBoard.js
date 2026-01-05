@@ -11,8 +11,11 @@ import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../config/translations';
 import { handleWrongSelection } from '../utils/animation';
-import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd, isRoundComplete } from '../utils/helpers';
+import { toggleTurn, sumOfSeedsInCurrentRow, handleCheckGameEnd, isRoundComplete, hasAvailableMoves } from '../utils/helpers';
+import { calculateRedistribution, combineSeeds } from '../utils/redistribution';
 import RoundEndModal from './RoundEndModal';
+import MatchEndModal from './MatchEndModal';
+import ConcedeConfirmModal from './ConcedeConfirmModal';
 import { validateSeedCount } from '../utils/seedValidator';
 import { useSeedEventLog } from '../hooks/useSeedEventLog';
 import config from '../config/config';
@@ -120,6 +123,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const [matchEnded, setMatchEnded] = useState(false);
   const [matchWinner, setMatchWinner] = useState(null);
   const [matchEndReason, setMatchEndReason] = useState(''); // 'domination', 'concession', 'voluntary'
+  const [concedeConfirmPlayer, setConcedeConfirmPlayer] = useState(null); // Which player is trying to concede
 
   // Helper to check if a hole is burned
   const isHoleBurned = (index) => {
@@ -392,10 +396,106 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     });
   };
 
-  // Traditional mode: Continue to next round (redistribution happens in Phase 5)
-  const handleContinueMatch = () => {
-    // Will be implemented in Phase 5 (redistribution)
+  // Traditional mode: Continue to next round with seed redistribution
+  const handleContinueMatch = async () => {
     setGamePhase(REDISTRIBUTING);
+
+    // Calculate new distributions
+    const upperResult = calculateRedistribution(topHouseSeeds, burnedHolesUpper, true);
+    const lowerResult = calculateRedistribution(lowHouseSeeds, burnedHolesLower, false);
+
+    // Check for total domination before applying
+    if (upperResult.newBurned.every(b => b)) {
+      setMatchWinner(PLAYER_LOWER);
+      setMatchEndReason('domination');
+      setMatchEnded(true);
+      setGamePhase(MATCH_END);
+      return;
+    }
+    if (lowerResult.newBurned.every(b => b)) {
+      setMatchWinner(PLAYER_UPPER);
+      setMatchEndReason('domination');
+      setMatchEnded(true);
+      setGamePhase(MATCH_END);
+      return;
+    }
+
+    // Animate redistribution with smooth incremental updates
+    await animateRedistribution(upperResult, lowerResult);
+
+    // Apply burned holes state
+    setBurnedHolesUpper(upperResult.newBurned);
+    setBurnedHolesLower(lowerResult.newBurned);
+
+    // Set leftover seeds in houses (extras beyond 49 stay in house)
+    updateTopHouseSeeds(upperResult.leftoverSeeds);
+    updateLowHouseSeeds(lowerResult.leftoverSeeds);
+
+    setCurrentRound(prev => prev + 1);
+
+    // Reset for new round
+    setCurrentTurn(null);
+    updateIsSowingUpper(false);
+    updateIsSowingLower(false);
+    updateFreeplayWaitingUpper(false);
+    updateFreeplayWaitingLower(false);
+    firstToEndRef.current = null;
+    setShowStartButton(true);
+    setGamePhase(COUNTDOWN);
+    gamePausedRef.current = true; // Pause until START is clicked
+  };
+
+  // Animate redistribution - incrementally fill holes from house
+  const animateRedistribution = async (upperResult, lowerResult) => {
+    const fillOrder = [6, 5, 4, 3, 2, 1, 0];
+    const delay = 120; // Smooth animation speed
+
+    // Start with empty board
+    const animSeeds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    updateSeeds(animSeeds);
+
+    // Animate upper row - fill each hole incrementally
+    let upperHouseRemaining = topHouseSeeds;
+    for (const localIndex of fillOrder) {
+      const targetSeeds = upperResult.newSeeds[localIndex];
+      if (targetSeeds > 0) {
+        // Fill this hole seed by seed (or in chunks for speed)
+        for (let s = 1; s <= targetSeeds; s++) {
+          animSeeds[localIndex] = s;
+          upperHouseRemaining--;
+          updateSeeds([...animSeeds]);
+          updateTopHouseSeeds(Math.max(0, upperHouseRemaining));
+          await new Promise(resolve => setTimeout(resolve, delay / 2));
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    // Set final upper house value (leftover seeds)
+    updateTopHouseSeeds(upperResult.leftoverSeeds);
+
+    // Animate lower row - fill each hole incrementally
+    let lowerHouseRemaining = lowHouseSeeds;
+    for (const localIndex of fillOrder) {
+      const targetSeeds = lowerResult.newSeeds[localIndex];
+      if (targetSeeds > 0) {
+        const boardIndex = localIndex + 7; // Lower row is indices 7-13
+        // Fill this hole seed by seed
+        for (let s = 1; s <= targetSeeds; s++) {
+          animSeeds[boardIndex] = s;
+          lowerHouseRemaining--;
+          updateSeeds([...animSeeds]);
+          updateLowHouseSeeds(Math.max(0, lowerHouseRemaining));
+          await new Promise(resolve => setTimeout(resolve, delay / 2));
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    // Set final lower house value (leftover seeds)
+    updateLowHouseSeeds(lowerResult.leftoverSeeds);
+
+    // Final state
+    const newSeeds = combineSeeds(upperResult.newSeeds, lowerResult.newSeeds);
+    updateSeeds(newSeeds, `redistribution round ${currentRound + 1}`);
   };
 
   // Traditional mode: End match voluntarily
@@ -407,6 +507,28 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     setMatchEndReason('voluntary');
     setMatchEnded(true);
     setGamePhase(MATCH_END);
+  };
+
+  // Traditional mode: Show concede confirmation
+  const handleConcedeClick = (player) => {
+    setConcedeConfirmPlayer(player);
+  };
+
+  // Traditional mode: Confirm concession
+  const handleConcedeConfirm = () => {
+    if (concedeConfirmPlayer) {
+      const winner = concedeConfirmPlayer === PLAYER_UPPER ? PLAYER_LOWER : PLAYER_UPPER;
+      setMatchWinner(winner);
+      setMatchEndReason('concession');
+      setMatchEnded(true);
+      setGamePhase(MATCH_END);
+    }
+    setConcedeConfirmPlayer(null);
+  };
+
+  // Traditional mode: Cancel concession
+  const handleConcedeCancel = () => {
+    setConcedeConfirmPlayer(null);
   };
 
   // Define the handlers for the mobile buttons
@@ -712,15 +834,39 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     }
   }, [isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, gameMode, isGameOver, matchEnded]);
 
-  // Skip turn if the whole row is empty
+  // Skip turn if player has no available moves
   useEffect(() => {
-    if ((!isSowingUpper && !isSowingLower ) && !isGameOver) {
-      let sum = sumOfSeedsInCurrentRow(seeds, currentTurn, config);
-      if (sum === 0) {
-        toggleTurn(setCurrentTurn, currentTurn);
+    // Don't run during round end, redistribution, or match end phases
+    if (gamePhase === ROUND_END || gamePhase === REDISTRIBUTING || gamePhase === MATCH_END || gamePhase === COUNTDOWN) {
+      return;
+    }
+    // Don't run in freeplay mode - freeplay handles its own transitions
+    if (gamePhase === FREEPLAY) {
+      return;
+    }
+    if ((!isSowingUpper && !isSowingLower) && !isGameOver && !matchEnded && currentTurn) {
+      if (gameMode === 'traditional') {
+        // Check if BOTH players have no moves - this means round is ending, don't toggle
+        const upperHasMoves = hasAvailableMoves(seeds, PLAYER_UPPER, burnedHolesUpper);
+        const lowerHasMoves = hasAvailableMoves(seeds, PLAYER_LOWER, burnedHolesLower);
+        if (!upperHasMoves && !lowerHasMoves) {
+          // Round is complete, don't toggle - let round end handler take over
+          return;
+        }
+        // Traditional mode: check for available moves considering burned holes
+        const burnedHoles = currentTurn === PLAYER_UPPER ? burnedHolesUpper : burnedHolesLower;
+        if (!hasAvailableMoves(seeds, currentTurn, burnedHoles)) {
+          toggleTurn(setCurrentTurn, currentTurn);
+        }
+      } else {
+        // Quick match: just check if row is empty
+        let sum = sumOfSeedsInCurrentRow(seeds, currentTurn, config);
+        if (sum === 0) {
+          toggleTurn(setCurrentTurn, currentTurn);
+        }
       }
     }
-  }, [seeds, currentTurn, isSowingUpper, isSowingLower, isGameOver]);
+  }, [seeds, currentTurn, isSowingUpper, isSowingLower, isGameOver, matchEnded, gameMode, burnedHolesUpper, burnedHolesLower, gamePhase]);
 
 /**==============================================
  *        SOWING LOGIC
@@ -971,15 +1117,26 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
 
     // Handle game phase transitions
     if (gamePhase === FREEPLAY) {
-      if (getAnotherTurn) {
-        // Landed in house - can pick again, stay in freeplay
+      // Check if this player actually has available moves for "another turn"
+      const myBurnedHoles = isUpperPlayer ? burnedHolesUpper : burnedHolesLower;
+      const canActuallyPickAgain = gameMode === 'traditional'
+        ? hasAvailableMoves(seedsRef.current, player, myBurnedHoles)
+        : sumOfSeedsInCurrentRow(seedsRef.current, player, config) > 0;
+
+      if (getAnotherTurn && canActuallyPickAgain) {
+        // Landed in house AND can pick again - stay in freeplay
         console.log(`[PHASE] ${isUpperPlayer ? 'UPPER' : 'LOWER'} landed in house, can pick again`);
       } else {
-        // Turn ended - check if other player is still playing
+        // Turn ended (either didn't land in house, or no available moves)
+        // Check if other player is still playing
         // Use refs to get real-time state (avoid stale closure problem)
         const updateWaiting = isUpperPlayer ? updateFreeplayWaitingUpper : updateFreeplayWaitingLower;
         const otherWaitingRef = isUpperPlayer ? freeplayWaitingLowerRef : freeplayWaitingUpperRef;
         const otherSowingRef = isUpperPlayer ? isSowingLowerRef : isSowingUpperRef;
+
+        if (getAnotherTurn && !canActuallyPickAgain) {
+          console.log(`[PHASE] ${isUpperPlayer ? 'UPPER' : 'LOWER'} landed in house but no available moves`);
+        }
 
         if (otherSowingRef.current) {
           // Other player still sowing - this player waits
@@ -990,15 +1147,37 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
           console.log(`[PHASE] ${isUpperPlayer ? 'UPPER' : 'LOWER'} turn ended, waiting for other player`);
         } else if (otherWaitingRef.current) {
           // Other player already waiting - transition to turn-based
-          // First to end gets the next turn
-          const nextTurn = firstToEndRef.current === PLAYER_UPPER ? PLAYER_UPPER : PLAYER_LOWER;
-          setCurrentTurn(nextTurn);
-          setGamePhase(TURN_BASED_SELECT);
-          // Reset freeplay states
-          updateFreeplayWaitingUpper(false);
-          updateFreeplayWaitingLower(false);
-          firstToEndRef.current = null;
-          console.log(`[PHASE] Both ended. Transition to TURN_BASED: ${nextTurn === PLAYER_UPPER ? 'UPPER' : 'LOWER'}'s turn`);
+          // But first check if round is complete (traditional mode)
+          if (gameMode === 'traditional' && isRoundComplete(seedsRef.current)) {
+            // Round complete - don't transition to turn-based, let useEffect handle ROUND_END
+            updateFreeplayWaitingUpper(false);
+            updateFreeplayWaitingLower(false);
+            firstToEndRef.current = null;
+            console.log(`[PHASE] Both ended. Round complete - waiting for ROUND_END`);
+          } else {
+            // First to end gets the next turn (but only if they have moves)
+            const otherPlayer = isUpperPlayer ? PLAYER_LOWER : PLAYER_UPPER;
+            const otherBurnedHoles = isUpperPlayer ? burnedHolesLower : burnedHolesUpper;
+            const otherHasMoves = gameMode === 'traditional'
+              ? hasAvailableMoves(seedsRef.current, otherPlayer, otherBurnedHoles)
+              : sumOfSeedsInCurrentRow(seedsRef.current, otherPlayer, config) > 0;
+
+            // Determine next turn: first to end gets priority, but skip if no moves
+            let nextTurn;
+            if (firstToEndRef.current === player) {
+              nextTurn = canActuallyPickAgain ? player : otherPlayer;
+            } else {
+              nextTurn = otherHasMoves ? otherPlayer : player;
+            }
+
+            setCurrentTurn(nextTurn);
+            setGamePhase(TURN_BASED_SELECT);
+            // Reset freeplay states
+            updateFreeplayWaitingUpper(false);
+            updateFreeplayWaitingLower(false);
+            firstToEndRef.current = null;
+            console.log(`[PHASE] Both ended. Transition to TURN_BASED: ${nextTurn === PLAYER_UPPER ? 'UPPER' : 'LOWER'}'s turn`);
+          }
         } else {
           // Other player not sowing and not waiting - they haven't started yet or also just ended
           // This player waits
@@ -1011,10 +1190,16 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       }
     } else {
       // Already in turn-based mode
-      if (!getAnotherTurn) {
-        toggleTurn(setCurrentTurn, currentTurn);
+      // Check if round is complete before transitioning
+      if (gameMode === 'traditional' && isRoundComplete(seedsRef.current)) {
+        // Round complete - don't set phase, let useEffect handle ROUND_END
+        console.log(`[PHASE] Turn-based sowing ended. Round complete - waiting for ROUND_END`);
+      } else {
+        if (!getAnotherTurn) {
+          toggleTurn(setCurrentTurn, currentTurn);
+        }
+        setGamePhase(TURN_BASED_SELECT);
       }
-      setGamePhase(TURN_BASED_SELECT);
     }
 
     // Validate seed count at end of sowing - read latest state from refs
@@ -1064,6 +1249,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         </button>
       )}
 
+
       {/* Language Selector */}
       <LanguageSelector />
 
@@ -1085,30 +1271,42 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         </div>
       </div>
       <div className='game-area'>
-        <div ref={gameContainerRef} className={`game-container ${isGameOver ? 'game-over' : ''}`}>
-          <div className='game-content'>
-            <House position="lower" seedCount={lowHouseSeeds} ref={lowHouseRef}/>
-            <div className="rows-container">
-              {/* Update the Row for upper player */}
-              <Row
-                seeds={seeds.slice(MIN_INDEX_UPPER, MIN_INDEX_LOWER)}
-                rowType="upper"
-                isUpper={true}
-                onClick={(index) => {handleSButtonPress(index)}}
-                refs={holeRefs.current}
-                selectedHole={null}
-                burnedHoles={burnedHolesUpper}
-              />
-              <Row
-                seeds={seeds.slice(MIN_INDEX_LOWER).reverse()}
-                rowType="lower"
-                onClick={(index) => {handleArrowDownPress(index)}}
-                refs={holeRefs.current}
-                selectedHole={null}
-                burnedHoles={burnedHolesLower}
-              />
-            </div>
-            <House position="upper" seedCount={topHouseSeeds} ref={topHouseRef} isUpper={true}/>
+        <div className="board-wrapper">
+          {/* Concede button - Dark player (above board) */}
+          {gameMode === 'traditional' && !matchEnded && !isGameOver && !showStartButton && !showCountdown && (
+            <button
+              className="concede-btn concede-btn--upper"
+              onClick={() => handleConcedeClick(PLAYER_UPPER)}
+            >
+              <i className="fa fa-flag"></i>
+              <span>{language === 'BM' ? 'Gelap Mengalah' : 'Dark Concedes'}</span>
+            </button>
+          )}
+
+          <div ref={gameContainerRef} className={`game-container ${isGameOver ? 'game-over' : ''}`}>
+            <div className='game-content'>
+              <House position="lower" seedCount={lowHouseSeeds} ref={lowHouseRef}/>
+              <div className="rows-container">
+                {/* Update the Row for upper player */}
+                <Row
+                  seeds={seeds.slice(MIN_INDEX_UPPER, MIN_INDEX_LOWER)}
+                  rowType="upper"
+                  isUpper={true}
+                  onClick={(index) => {handleSButtonPress(index)}}
+                  refs={holeRefs.current}
+                  selectedHole={null}
+                  burnedHoles={burnedHolesUpper}
+                />
+                <Row
+                  seeds={seeds.slice(MIN_INDEX_LOWER).reverse()}
+                  rowType="lower"
+                  onClick={(index) => {handleArrowDownPress(index)}}
+                  refs={holeRefs.current}
+                  selectedHole={null}
+                  burnedHoles={burnedHolesLower}
+                />
+              </div>
+              <House position="upper" seedCount={topHouseSeeds} ref={topHouseRef} isUpper={true}/>
             <Cursor
               shake={shakeCursorUpper}
               top={cursorTopUpper}
@@ -1131,8 +1329,21 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
               isTopTurn={false}
               color={"yellow"}
             />
+            </div>
           </div>
+
+          {/* Concede button - White player (below board) */}
+          {gameMode === 'traditional' && !matchEnded && !isGameOver && !showStartButton && !showCountdown && (
+            <button
+              className="concede-btn concede-btn--lower"
+              onClick={() => handleConcedeClick(PLAYER_LOWER)}
+            >
+              <i className="fa fa-flag"></i>
+              <span>{language === 'BM' ? 'Putih Mengalah' : 'White Concedes'}</span>
+            </button>
+          )}
         </div>
+
         {/* {showSelectionMessage && (
           <div className="selection-message">
             Please select a valid position.
@@ -1163,6 +1374,26 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         burnedHolesLower={burnedHolesLower}
         onContinue={handleContinueMatch}
         onEndMatch={handleEndMatch}
+      />
+
+      {/* Match End Modal for Traditional mode */}
+      <MatchEndModal
+        isOpen={gamePhase === MATCH_END}
+        winner={matchWinner}
+        reason={matchEndReason}
+        topHouseSeeds={topHouseSeeds}
+        lowHouseSeeds={lowHouseSeeds}
+        roundsPlayed={currentRound}
+        onPlayAgain={() => window.location.reload(true)}
+        onMainMenu={() => window.location.reload(true)}
+      />
+
+      {/* Concede Confirmation Modal */}
+      <ConcedeConfirmModal
+        isOpen={concedeConfirmPlayer !== null}
+        player={concedeConfirmPlayer}
+        onConfirm={handleConcedeConfirm}
+        onCancel={handleConcedeCancel}
       />
 
       <div class="trademark-section">
