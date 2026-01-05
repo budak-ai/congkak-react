@@ -19,6 +19,28 @@ export function sumOfSeedsInCurrentRow(seeds, currentTurn) {
   return sum;
 }
 
+/**
+ * Check if player has any available moves (non-burned holes with seeds)
+ * @param {number[]} seeds - Current seeds array (14 elements)
+ * @param {string} currentTurn - PLAYER_UPPER or PLAYER_LOWER
+ * @param {boolean[]} burnedHoles - Burned holes for the current player (7 elements)
+ * @returns {boolean} True if player has at least one available move
+ */
+export function hasAvailableMoves(seeds, currentTurn, burnedHoles) {
+  const startIndex = currentTurn === PLAYER_UPPER ? MIN_INDEX_UPPER : MIN_INDEX_LOWER;
+  const endIndex = currentTurn === PLAYER_UPPER ? MAX_INDEX_UPPER : MAX_INDEX_LOWER;
+
+  for (let i = startIndex; i <= endIndex; i++) {
+    const localIndex = currentTurn === PLAYER_UPPER ? i : i - MIN_INDEX_LOWER;
+    // Check if hole has seeds AND is not burned
+    if (seeds[i] > 0 && !burnedHoles[localIndex]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function sumOfSeedsInRow(seeds, startIndex, endIndex) {
   let sum = 0;
 
