@@ -20,6 +20,7 @@ import { validateSeedCount } from '../utils/seedValidator';
 import { useSeedEventLog } from '../hooks/useSeedEventLog';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
+import CongkakCanvas from './three/CongkakCanvas';
 
 const {
   INIT_SEEDS_COUNT,
@@ -1283,7 +1284,30 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
             </button>
           )}
 
-          <div ref={gameContainerRef} className={`game-container ${isGameOver ? 'game-over' : ''}`}>
+          <div ref={gameContainerRef} className={`game-container ghost-container ${isGameOver ? 'game-over' : ''}`}>
+            {/* 3D Canvas Overlay */}
+            <CongkakCanvas
+              seeds={seeds}
+              topHouseSeeds={topHouseSeeds}
+              lowHouseSeeds={lowHouseSeeds}
+              seedsInHandUpper={currentSeedsInHandUpper}
+              seedsInHandLower={currentSeedsInHandLower}
+              cursorUpperPosition={{ left: cursorLeftUpper, top: cursorTopUpper }}
+              cursorLowerPosition={{ left: cursorLeftLower, top: cursorTopLower }}
+              cursorUpperVisible={cursorVisibilityUpper.visible}
+              cursorLowerVisible={cursorVisibilityLower.visible}
+              holeRefs={holeRefs}
+              topHouseRef={topHouseRef}
+              lowHouseRef={lowHouseRef}
+              burnedHolesUpper={burnedHolesUpper}
+              burnedHolesLower={burnedHolesLower}
+              shakeCursorUpper={shakeCursorUpper}
+              shakeCursorLower={shakeCursorLower}
+              canMoveUpper={cursorVisibilityUpper.canMove}
+              canMoveLower={cursorVisibilityLower.canMove}
+              isSowingUpper={isSowingUpper}
+              isSowingLower={isSowingLower}
+            />
             <div className='game-content'>
               <House position="lower" seedCount={lowHouseSeeds} ref={lowHouseRef}/>
               <div className="rows-container">
@@ -1396,7 +1420,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         onCancel={handleConcedeCancel}
       />
 
-      <div class="trademark-section">
+      <div className="trademark-section">
         © 2023 <a href="https://twitter.com/ayuinmetaverse" target="_blank">AYU</a>. All Rights Reserved.
       </div>
       <Analytics/>

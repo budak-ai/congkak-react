@@ -1,0 +1,34 @@
+/* CongkakCanvas.css - Styles for 3D canvas overlay */
+
+.congkak-canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; /* Allow clicks to pass through to DOM */
+  z-index: 100;
+}
+
+.congkak-canvas-container canvas {
+  display: block !important;
+}
+
+/* Make DOM holes invisible when 3D is active */
+.ghost-container .circle .seed-count,
+.ghost-container .house .seed-count {
+  opacity: 0;
+}
+
+/* Keep burned overlay visible */
+.ghost-container .circle.burned .burned-overlay {
+  opacity: 0; /* Will be rendered in 3D instead */
+}
+
+/* Optionally hide hole backgrounds too (uncomment if board is 3D) */
+/*
+.ghost-container .circle {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+*/

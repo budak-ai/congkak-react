@@ -1,0 +1,153 @@
+import React, { useRef, useMemo, useEffect } from 'react';
+import * as THREE from 'three';
+import threeConfig from '../../config/threeConfig';
+import useScreenToWorld from '../../hooks/useScreenToWorld';
+import { generateSeedLayout } from './Seed3D';
+
+// Maximum number of seed instances (14 holes * 7 seeds + 2 houses * 50 seeds max)
+const MAX_INSTANCES = 250;
+
+/**
+ * Efficient seed renderer using InstancedMesh
+ * Renders all seeds in holes and houses with a single draw call
+ */
+const SeedRenderer = ({
+  seeds,
+  topHouseSeeds,
+  lowHouseSeeds,
+  holeRefs,
+  topHouseRef,
+  lowHouseRef,
+  burnedHolesUpper,
+  burnedHolesLower,
+}) => {
+  const meshRef = useRef();
+  const { domElementToWorld, getHoleRadius } = useScreenToWorld();
+  const tempObject = useMemo(() => new THREE.Object3D(), []);
+  const { seed } = threeConfig;
+
+  // Create shared geometry and material
+  const geometry = useMemo(() => (
+    new THREE.SphereGeometry(seed.radius, seed.segments, seed.segments)
+  ), [seed]);
+
+  const material = useMemo(() => (
+    new THREE.MeshStandardMaterial({
+      color: seed.color,
+      roughness: seed.roughness,
+      metalness: seed.metalness,
+    })
+  ), [seed]);
+
+  // Calculate all seed positions
+  const seedData = useMemo(() => {
+    const data = [];
+
+    if (!holeRefs?.current) return data;
+
+    // Process holes (indices 0-13)
+    seeds?.forEach((seedCount, holeIndex) => {
+      const holeElement = holeRefs.current[holeIndex];
+      if (!holeElement) return;
+
+      // Check if hole is burned
+      const isUpper = holeIndex < 7;
+      const localIndex = isUpper ? holeIndex : holeIndex - 7;
+      const isBurned = isUpper
+        ? burnedHolesUpper?.[localIndex]
+        : burnedHolesLower?.[localIndex];
+
+      if (isBurned || seedCount === 0) return;
+
+      const worldPos = domElementToWorld(holeElement);
+      const holeRadius = getHoleRadius(holeElement);
+      const seedPositions = generateSeedLayout(seedCount, holeRadius);
+
+      seedPositions.forEach(([x, y, z]) => {
+        data.push({
+          position: [worldPos.x + x, y, worldPos.z + z],
+          visible: true,
+        });
+      });
+    });
+
+    // Process top house
+    if (topHouseRef?.current && topHouseSeeds > 0) {
+      const worldPos = domElementToWorld(topHouseRef.current);
+      const houseRadius = getHoleRadius(topHouseRef.current);
+      const seedPositions = generateSeedLayout(topHouseSeeds, houseRadius);
+
+      seedPositions.forEach(([x, y, z]) => {
+        data.push({
+          position: [worldPos.x + x, y, worldPos.z + z],
+          visible: true,
+        });
+      });
+    }
+
+    // Process lower house
+    if (lowHouseRef?.current && lowHouseSeeds > 0) {
+      const worldPos = domElementToWorld(lowHouseRef.current);
+      const houseRadius = getHoleRadius(lowHouseRef.current);
+      const seedPositions = generateSeedLayout(lowHouseSeeds, houseRadius);
+
+      seedPositions.forEach(([x, y, z]) => {
+        data.push({
+          position: [worldPos.x + x, y, worldPos.z + z],
+          visible: true,
+        });
+      });
+    }
+
+    return data;
+  }, [
+    seeds,
+    topHouseSeeds,
+    lowHouseSeeds,
+    holeRefs,
+    topHouseRef,
+    lowHouseRef,
+    burnedHolesUpper,
+    burnedHolesLower,
+    domElementToWorld,
+    getHoleRadius,
+  ]);
+
+  // Update instance matrices once when seedData changes
+  useEffect(() => {
+    if (!meshRef.current || seedData.length === 0) return;
+
+    let instanceIndex = 0;
+
+    // Position visible seeds
+    seedData.forEach(({ position, visible }) => {
+      if (visible && instanceIndex < MAX_INSTANCES) {
+        tempObject.position.set(position[0], position[1], position[2]);
+        tempObject.scale.set(1, 1, 1);
+        tempObject.updateMatrix();
+        meshRef.current.setMatrixAt(instanceIndex, tempObject.matrix);
+        instanceIndex++;
+      }
+    });
+
+    // Hide unused instances
+    for (let i = instanceIndex; i < MAX_INSTANCES; i++) {
+      tempObject.position.set(0, -100, 0);
+      tempObject.scale.set(0, 0, 0);
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [seedData, tempObject]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[geometry, material, MAX_INSTANCES]}
+      frustumCulled={false}
+    />
+  );
+};
+
+export default SeedRenderer;

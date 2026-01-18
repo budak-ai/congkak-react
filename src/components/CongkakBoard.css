@@ -146,7 +146,7 @@ body {
 }
 
 .game-container {
-  /* position: absolute; */
+  position: relative; /* Required for 3D canvas overlay */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -470,4 +470,15 @@ body {
 .concede-btn--lower:hover {
   background-color: #e07a3d;
   border-color: #c96a32;
+}
+
+/* Ghost container - hides DOM seed numbers when 3D canvas is active */
+.ghost-container .circle .seed-count,
+.ghost-container .house .seed-count {
+  opacity: 0;
+}
+
+/* Hide burned overlay in ghost mode (rendered in 3D) */
+.ghost-container .circle.burned .burned-overlay {
+  opacity: 0;
 }
