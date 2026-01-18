@@ -47,7 +47,7 @@ const threeConfig = {
   colors: {
     seedPrimary: '#8B4513',    // Brown marble
     seedSecondary: '#654321',  // Darker brown
-    handUpper: '#8B3A3A',      // Lighter red/brown
+    handUpper: '#C47D7A',      // Light rosewood
     handLower: '#DAA520',      // Goldenrod (matches current cursor)
   },
 };

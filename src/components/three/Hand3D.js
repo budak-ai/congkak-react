@@ -88,7 +88,7 @@ const Hand3D = ({
   return (
     <group
       ref={groupRef}
-      rotation={isUpper ? [0, 0, Math.PI] : [0, 0, 0]}
+      rotation={isUpper ? [0, 0, 0] : [0, Math.PI, 0]}
       scale={[6, 6, 6]}
     >
       {/* Simple hand geometry - palm */}
