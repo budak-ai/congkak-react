@@ -34,6 +34,24 @@ const threeConfig = {
     spreadRadius: 0.28,
   },
 
+  // Hole appearance (the pits where seeds sit)
+  hole: {
+    depth: 0.4,
+    segments: 32,
+    color: '#6B5D52',      // Medium brown interior
+    rimColor: '#8B7D6B',   // Light brown rim
+    rimWidth: 0.08,
+  },
+
+  // House appearance (larger scoring areas)
+  house: {
+    depth: 0.5,
+    segments: 32,
+    color: '#6B5D52',
+    rimColor: '#8B7D6B',
+    rimWidth: 0.1,
+  },
+
   // Lighting
   lighting: {
     ambient: {

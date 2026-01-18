@@ -1,5 +1,6 @@
 import React from 'react';
 import threeConfig from '../../config/threeConfig';
+import HoleRenderer from './HoleRenderer';
 import SeedRenderer from './SeedRenderer';
 import Hand3D from './Hand3D';
 
@@ -44,6 +45,15 @@ const Scene = ({
       <directionalLight
         position={lighting.directional.position}
         intensity={lighting.directional.intensity}
+      />
+
+      {/* 3D depth for holes and houses */}
+      <HoleRenderer
+        holeRefs={holeRefs}
+        topHouseRef={topHouseRef}
+        lowHouseRef={lowHouseRef}
+        burnedHolesUpper={burnedHolesUpper}
+        burnedHolesLower={burnedHolesLower}
       />
 
       {/* Seeds in holes and houses */}
