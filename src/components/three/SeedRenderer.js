@@ -2,7 +2,7 @@ import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import threeConfig from '../../config/threeConfig';
 import useScreenToWorld from '../../hooks/useScreenToWorld';
-import { generateSeedLayout } from './Seed3D';
+import { generateSeedLayout, generateHouseSeedLayout } from './Seed3D';
 
 // Maximum number of seed instances (14 holes * 7 seeds + 2 houses * 50 seeds max)
 const MAX_INSTANCES = 250;
@@ -86,11 +86,11 @@ const SeedRenderer = ({
       });
     });
 
-    // Process top house
+    // Process top house (with non-overlapping layout)
     if (topHouseRef?.current && topHouseSeeds > 0) {
       const worldPos = domElementToWorld(topHouseRef.current);
       const houseRadius = getHoleRadius(topHouseRef.current);
-      const seedPositions = generateSeedLayout(topHouseSeeds, houseRadius);
+      const seedPositions = generateHouseSeedLayout(topHouseSeeds, houseRadius);
 
       seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
@@ -101,11 +101,11 @@ const SeedRenderer = ({
       });
     }
 
-    // Process lower house
+    // Process lower house (with non-overlapping layout)
     if (lowHouseRef?.current && lowHouseSeeds > 0) {
       const worldPos = domElementToWorld(lowHouseRef.current);
       const houseRadius = getHoleRadius(lowHouseRef.current);
-      const seedPositions = generateSeedLayout(lowHouseSeeds, houseRadius);
+      const seedPositions = generateHouseSeedLayout(lowHouseSeeds, houseRadius);
 
       seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({

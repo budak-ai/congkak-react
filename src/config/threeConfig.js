@@ -11,7 +11,7 @@ const threeConfig = {
 
   // Seed appearance
   seed: {
-    radius: 0.18,
+    radius: 0.12,
     segments: 16,
     roughness: 0.4,
     metalness: 0.1,
