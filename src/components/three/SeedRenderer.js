@@ -24,18 +24,25 @@ const SeedRenderer = ({
   const meshRef = useRef();
   const { domElementToWorld, getHoleRadius } = useScreenToWorld();
   const tempObject = useMemo(() => new THREE.Object3D(), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
   const { seed } = threeConfig;
 
-  // Create shared geometry and material
+  // Parse seed colors from config
+  const seedColors = useMemo(() =>
+    seed.colors.map(c => new THREE.Color(c)),
+    [seed.colors]
+  );
+
+  // Create shared geometry and material (vertexColors enabled for instance colors)
   const geometry = useMemo(() => (
     new THREE.SphereGeometry(seed.radius, seed.segments, seed.segments)
   ), [seed]);
 
   const material = useMemo(() => (
     new THREE.MeshStandardMaterial({
-      color: seed.color,
       roughness: seed.roughness,
       metalness: seed.metalness,
+      vertexColors: false,
     })
   ), [seed]);
 
@@ -113,19 +120,24 @@ const SeedRenderer = ({
     getHoleRadius,
   ]);
 
-  // Update instance matrices once when seedData changes
+  // Update instance matrices and colors when seedData changes
   useEffect(() => {
     if (!meshRef.current || seedData.length === 0) return;
 
     let instanceIndex = 0;
 
-    // Position visible seeds
+    // Position visible seeds with colors
     seedData.forEach(({ position, visible }) => {
       if (visible && instanceIndex < MAX_INSTANCES) {
         tempObject.position.set(position[0], position[1], position[2]);
         tempObject.scale.set(1, 1, 1);
         tempObject.updateMatrix();
         meshRef.current.setMatrixAt(instanceIndex, tempObject.matrix);
+
+        // Assign color based on instance index (cycling through palette)
+        const color = seedColors[instanceIndex % seedColors.length];
+        meshRef.current.setColorAt(instanceIndex, color);
+
         instanceIndex++;
       }
     });
@@ -139,7 +151,10 @@ const SeedRenderer = ({
     }
 
     meshRef.current.instanceMatrix.needsUpdate = true;
-  }, [seedData, tempObject]);
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true;
+    }
+  }, [seedData, tempObject, seedColors]);
 
   return (
     <instancedMesh

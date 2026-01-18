@@ -13,9 +13,18 @@ const threeConfig = {
   seed: {
     radius: 0.18,
     segments: 16,
-    color: '#8B4513', // Saddle brown (wooden marble look)
     roughness: 0.4,
     metalness: 0.1,
+    // Colorful marble palette
+    colors: [
+      '#E74C3C', // Red
+      '#3498DB', // Blue
+      '#2ECC71', // Green
+      '#F39C12', // Orange
+      '#9B59B6', // Purple
+      '#1ABC9C', // Teal
+      '#E91E63', // Pink
+    ],
   },
 
   // Seed cluster layout

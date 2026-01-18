@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import * as THREE from 'three';
 import threeConfig from '../../config/threeConfig';
 
 /**
@@ -31,15 +30,6 @@ const SeedsInHand = ({ count }) => {
     return positions;
   }, [count]);
 
-  // Shared material
-  const material = useMemo(() => (
-    new THREE.MeshStandardMaterial({
-      color: seed.color,
-      roughness: seed.roughness,
-      metalness: seed.metalness,
-    })
-  ), [seed]);
-
   // Smaller seed size for hand
   const handSeedRadius = seed.radius * 0.7;
 
@@ -48,7 +38,11 @@ const SeedsInHand = ({ count }) => {
       {seedPositions.map((pos, i) => (
         <mesh key={i} position={pos}>
           <sphereGeometry args={[handSeedRadius, 12, 12]} />
-          <primitive object={material} attach="material" />
+          <meshStandardMaterial
+            color={seed.colors[i % seed.colors.length]}
+            roughness={seed.roughness}
+            metalness={seed.metalness}
+          />
         </mesh>
       ))}
 
