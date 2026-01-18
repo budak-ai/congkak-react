@@ -381,13 +381,15 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     const lowerHole = holeRefs.current[startIndexLower];
     if (upperHole) {
       const rect = upperHole.getBoundingClientRect();
-      setCursorLeftUpper(rect.left + window.scrollX);
-      setCursorTopUpper(rect.top + window.scrollY + (verticalPosUpper * rect.height));
+      // Use center of element for 3D hand positioning
+      setCursorLeftUpper(rect.left + window.scrollX + rect.width / 2);
+      setCursorTopUpper(rect.top + window.scrollY + rect.height / 2);
     }
     if (lowerHole) {
       const rect = lowerHole.getBoundingClientRect();
-      setCursorLeftLower(rect.left + window.scrollX);
-      setCursorTopLower(rect.top + window.scrollY + (verticalPosLower * rect.height));
+      // Use center of element for 3D hand positioning
+      setCursorLeftLower(rect.left + window.scrollX + rect.width / 2);
+      setCursorTopLower(rect.top + window.scrollY + rect.height / 2);
     }
 
     // Re-enable transitions after next frame (game stays paused until START)
@@ -624,8 +626,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       if (!forceUpdate && resetRequestedRef.current) return;
 
       const rect = element.getBoundingClientRect();
-      setCursorLeftUpper(rect.left + window.scrollX);
-      setCursorTopUpper(rect.top + window.scrollY + (verticalPosUpper * rect.height));
+      // Use center of element for 3D hand positioning
+      setCursorLeftUpper(rect.left + window.scrollX + rect.width / 2);
+      setCursorTopUpper(rect.top + window.scrollY + rect.height / 2);
 
       // Skip delay if reset requested or forced update
       if (forceUpdate || resetRequestedRef.current || gamePausedRef.current) return;
@@ -661,8 +664,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       if (!forceUpdate && resetRequestedRef.current) return;
 
       const rect = element.getBoundingClientRect();
-      setCursorLeftLower(rect.left + window.scrollX);
-      setCursorTopLower(rect.top + window.scrollY + (verticalPosLower * rect.height));
+      // Use center of element for 3D hand positioning
+      setCursorLeftLower(rect.left + window.scrollX + rect.width / 2);
+      setCursorTopLower(rect.top + window.scrollY + rect.height / 2);
 
       // Skip delay if reset requested or forced update
       if (forceUpdate || resetRequestedRef.current || gamePausedRef.current) return;
@@ -1331,6 +1335,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
                 />
               </div>
               <House position="upper" seedCount={topHouseSeeds} ref={topHouseRef} isUpper={true}/>
+{/* DOM Cursors replaced by 3D Hand3D components
             <Cursor
               shake={shakeCursorUpper}
               top={cursorTopUpper}
@@ -1353,6 +1358,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
               isTopTurn={false}
               color={"yellow"}
             />
+*/}
             </div>
           </div>
 

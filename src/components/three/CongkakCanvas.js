@@ -38,13 +38,14 @@ const CongkakCanvas = ({
     <div className="congkak-canvas-container">
       <Canvas
         camera={{
-          position: [0, 10, 0.1],
+          position: [0, 10, 0],  // Pure top-down view
           fov: 50,
           near: 0.1,
           far: 100,
         }}
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
+        style={{ pointerEvents: 'none' }}
         onCreated={({ camera }) => {
           camera.lookAt(0, 0, 0);
         }}

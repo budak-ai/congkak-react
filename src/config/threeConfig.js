@@ -40,14 +40,14 @@ const threeConfig = {
   animation: {
     lerpFactor: 0.15, // Smoothing factor for position interpolation
     shakeDuration: 500, // ms
-    shakeIntensity: 0.03,
+    shakeIntensity: 0.3, // Increased for visibility
   },
 
   // Colors
   colors: {
     seedPrimary: '#8B4513',    // Brown marble
     seedSecondary: '#654321',  // Darker brown
-    handUpper: '#510400',      // Dark red (matches current cursor)
+    handUpper: '#8B3A3A',      // Lighter red/brown
     handLower: '#DAA520',      // Goldenrod (matches current cursor)
   },
 };

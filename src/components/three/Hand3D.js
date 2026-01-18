@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import threeConfig from '../../config/threeConfig';
@@ -23,49 +23,58 @@ const Hand3D = ({
   const { screenToWorld } = useScreenToWorld();
   const { animation, colors } = threeConfig;
 
-  // Scale hand to be 3/4 of hole size
-  const handScale = holeRadius * 0.75;
-
   // Current interpolated position
   const currentPos = useRef(new THREE.Vector3());
-  const shakeOffset = useRef(0);
+
+  // Store props in refs so useFrame callback always has latest values
+  const positionRef = useRef(position);
+  const visibleRef = useRef(visible);
+  const shakeRef = useRef(shake);
+  const canMoveRef = useRef(canMove);
+  positionRef.current = position;
+  visibleRef.current = visible;
+  shakeRef.current = shake;
+  canMoveRef.current = canMove;
 
   // Hand color based on player
   const handColor = isUpper ? colors.handUpper : colors.handLower;
-
-  // Convert screen position to world coordinates
-  const targetPos = useMemo(() => {
-    if (!position?.left || !position?.top) {
-      return new THREE.Vector3(0, 3, 0);
-    }
-    const world = screenToWorld(position.left, position.top);
-    return new THREE.Vector3(world.x, 3, world.z); // Y=3 to float above board
-  }, [position, screenToWorld]);
 
   // Animation loop
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
-    // Smooth position interpolation (lerp)
-    currentPos.current.lerp(targetPos, animation.lerpFactor);
+    // Convert screen position to world coordinates every frame
+    const pos = positionRef.current;
+    let targetX = 0, targetZ = 0;
+    if (pos?.left && pos?.top) {
+      const world = screenToWorld(pos.left, pos.top);
+      targetX = world.x;
+      targetZ = world.z;
+    }
 
-    // Apply shake effect
-    if (shake) {
-      shakeOffset.current = Math.sin(state.clock.elapsedTime * 50) * animation.shakeIntensity;
-    } else {
-      shakeOffset.current *= 0.9; // Decay
+    // Smooth position interpolation (lerp)
+    currentPos.current.x += (targetX - currentPos.current.x) * animation.lerpFactor;
+    currentPos.current.y = 0.5; // Just above seeds, reduces perspective distortion
+    currentPos.current.z += (targetZ - currentPos.current.z) * animation.lerpFactor;
+
+    // Apply shake effect (X and Z axes like original)
+    let shakeX = 0, shakeZ = 0;
+    if (shakeRef.current) {
+      const t = state.clock.elapsedTime * 50;
+      shakeX = Math.sin(t) * animation.shakeIntensity;
+      shakeZ = Math.cos(t * 1.3) * animation.shakeIntensity * 0.7;
     }
 
     // Update position
     groupRef.current.position.set(
-      currentPos.current.x + shakeOffset.current,
+      currentPos.current.x + shakeX,
       currentPos.current.y,
-      currentPos.current.z
+      currentPos.current.z + shakeZ
     );
 
     // Pulse glow effect when can move
     const baseScale = 1.2;
-    if (canMove) {
+    if (canMoveRef.current) {
       const pulse = Math.sin(state.clock.elapsedTime * 5) * 0.1 + 1;
       groupRef.current.scale.setScalar(baseScale * pulse);
     } else {
@@ -73,14 +82,14 @@ const Hand3D = ({
     }
 
     // Visibility
-    groupRef.current.visible = visible;
+    groupRef.current.visible = visibleRef.current;
   });
 
   return (
     <group
       ref={groupRef}
       rotation={isUpper ? [0, 0, Math.PI] : [0, 0, 0]}
-      scale={[8, 8, 8]}
+      scale={[6, 6, 6]}
     >
       {/* Simple hand geometry - palm */}
       <mesh position={[0, 0, 0]}>
