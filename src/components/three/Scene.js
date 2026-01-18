@@ -27,6 +27,12 @@ const Scene = ({
   canMoveLower,
   isSowingUpper,
   isSowingLower,
+  // Color data for persistent seed colors
+  seedColors,
+  topHouseColors,
+  lowHouseColors,
+  colorsInHandUpper,
+  colorsInHandLower,
 }) => {
   const { lighting } = threeConfig;
 
@@ -50,6 +56,9 @@ const Scene = ({
         lowHouseRef={lowHouseRef}
         burnedHolesUpper={burnedHolesUpper}
         burnedHolesLower={burnedHolesLower}
+        seedColors={seedColors}
+        topHouseColors={topHouseColors}
+        lowHouseColors={lowHouseColors}
       />
 
       {/* Upper player hand cursor */}
@@ -62,6 +71,7 @@ const Scene = ({
         isUpper={true}
         isSowing={isSowingUpper}
         holeRadius={2.5}
+        colorsInHand={colorsInHandUpper}
       />
 
       {/* Lower player hand cursor */}
@@ -74,6 +84,7 @@ const Scene = ({
         isUpper={false}
         isSowing={isSowingLower}
         holeRadius={2.5}
+        colorsInHand={colorsInHandLower}
       />
     </>
   );

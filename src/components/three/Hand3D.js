@@ -18,6 +18,7 @@ const Hand3D = ({
   isUpper,
   isSowing,
   holeRadius = 1.5, // Default hole radius in world units
+  colorsInHand = [], // Color indices for seeds in hand
 }) => {
   const groupRef = useRef();
   const { screenToWorld } = useScreenToWorld();
@@ -117,7 +118,7 @@ const Hand3D = ({
 
       {/* Seeds in hand */}
       {seedCount > 0 && (
-        <SeedsInHand count={seedCount} />
+        <SeedsInHand count={seedCount} colorIndices={colorsInHand} />
       )}
     </group>
   );

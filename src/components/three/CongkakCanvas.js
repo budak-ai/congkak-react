@@ -33,6 +33,12 @@ const CongkakCanvas = ({
   // Game state
   isSowingUpper,
   isSowingLower,
+  // Color data for persistent seed colors
+  seedColors,
+  topHouseColors,
+  lowHouseColors,
+  colorsInHandUpper,
+  colorsInHandLower,
 }) => {
   return (
     <div className="congkak-canvas-container">
@@ -72,6 +78,12 @@ const CongkakCanvas = ({
             canMoveLower={canMoveLower}
             isSowingUpper={isSowingUpper}
             isSowingLower={isSowingLower}
+            // Color data
+            seedColors={seedColors}
+            topHouseColors={topHouseColors}
+            lowHouseColors={lowHouseColors}
+            colorsInHandUpper={colorsInHandUpper}
+            colorsInHandLower={colorsInHandLower}
           />
         </Suspense>
       </Canvas>

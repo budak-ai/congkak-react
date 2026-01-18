@@ -55,6 +55,23 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const [seeds, setSeeds] = useState(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT)); // 14 holes excluding houses
   const seedsRef = useRef(new Array(HOLE_NUMBERS).fill(INIT_SEEDS_COUNT)); // Ref for real-time sync in freeplay
 
+  // Persistent seed colors - each seed keeps its color when moving between holes
+  // Array of 14 arrays, each containing color indices (0-6) for seeds in that hole
+  const [seedColors, setSeedColors] = useState(() =>
+    Array(HOLE_NUMBERS).fill(null).map(() =>
+      Array(INIT_SEEDS_COUNT).fill(0).map(() => Math.floor(Math.random() * 7))
+    )
+  );
+  const seedColorsRef = useRef(seedColors);
+  const [topHouseColors, setTopHouseColors] = useState([]);
+  const topHouseColorsRef = useRef([]);
+  const [lowHouseColors, setLowHouseColors] = useState([]);
+  const lowHouseColorsRef = useRef([]);
+  const [colorsInHandUpper, setColorsInHandUpper] = useState([]);
+  const colorsInHandUpperRef = useRef([]);
+  const [colorsInHandLower, setColorsInHandLower] = useState([]);
+  const colorsInHandLowerRef = useRef([]);
+
   const holeRefs = useRef([]);
   const topHouseRef = useRef(null);
   const lowHouseRef = useRef(null);
@@ -235,6 +252,32 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     setCurrentSeedsInHandLower(value);
   };
 
+  // Helpers to update seed colors state and ref atomically
+  const updateSeedColors = (newColors) => {
+    seedColorsRef.current = newColors;
+    setSeedColors([...newColors]);
+  };
+
+  const updateTopHouseColors = (newColors) => {
+    topHouseColorsRef.current = newColors;
+    setTopHouseColors([...newColors]);
+  };
+
+  const updateLowHouseColors = (newColors) => {
+    lowHouseColorsRef.current = newColors;
+    setLowHouseColors([...newColors]);
+  };
+
+  const updateColorsInHandUpper = (newColors) => {
+    colorsInHandUpperRef.current = newColors;
+    setColorsInHandUpper([...newColors]);
+  };
+
+  const updateColorsInHandLower = (newColors) => {
+    colorsInHandLowerRef.current = newColors;
+    setColorsInHandLower([...newColors]);
+  };
+
   // Helpers to update sowing state and ref atomically
   const updateIsSowingUpper = (value) => {
     isSowingUpperRef.current = value;
@@ -357,6 +400,17 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     updateLowHouseSeeds(0);
     updateSeedsInHandUpper(0);
     updateSeedsInHandLower(0);
+
+    // Reset seed colors with fresh random colors
+    updateSeedColors(
+      Array(HOLE_NUMBERS).fill(null).map(() =>
+        Array(INIT_SEEDS_COUNT).fill(0).map(() => Math.floor(Math.random() * 7))
+      )
+    );
+    updateTopHouseColors([]);
+    updateLowHouseColors([]);
+    updateColorsInHandUpper([]);
+    updateColorsInHandLower([]);
 
     // Reset game state - show start button
     setGamePhase(COUNTDOWN);
@@ -898,7 +952,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     
     // Start sowing
     updateIsSowing(true);
-    
+
     let currentIndex = index;
     let newSeeds = [...seedsRef.current]; // Use ref for real-time state in freeplay
     let seedsInHand = isContinuation ? (isUpperPlayer ? currentSeedsInHandUpper : newSeeds[index]) : newSeeds[index];
@@ -906,7 +960,13 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     let hasPassedHouse = passedHouse;
     let justFilledHome = false;
     let getAnotherTurn = false;
-    
+
+    // Color tracking helpers for this player
+    const getColorsInHandRef = isUpperPlayer ? colorsInHandUpperRef : colorsInHandLowerRef;
+    const updateColorsInHand = isUpperPlayer ? updateColorsInHandUpper : updateColorsInHandLower;
+    const getHouseColorsRef = isUpperPlayer ? topHouseColorsRef : lowHouseColorsRef;
+    const updateHouseColors = isUpperPlayer ? updateTopHouseColors : updateLowHouseColors;
+
     if (!isContinuation) {
       // Prevent picking from empty hole
       if (seedsInHand === 0) {
@@ -920,6 +980,14 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     updateSeedsInHand(seedsInHand);
     newSeeds[index] = 0;
     updateSeeds(newSeeds);
+
+    // Pick up colors from the hole into hand
+    if (!isContinuation) {
+      const newSeedColors = [...seedColorsRef.current.map(arr => [...arr])];
+      const pickedColors = newSeedColors[index].splice(0); // Take all colors from hole
+      updateColorsInHand(pickedColors);
+      updateSeedColors(newSeedColors);
+    }
     const totalAfterPickup = newSeeds.reduce((a, b) => a + b, 0) + topHouseSeedsRef.current + lowHouseSeedsRef.current + seedsInHand;
     console.log(`[SEEDS] Pickup from hole ${index} | inHand: ${seedsInHand} | total: ${totalAfterPickup}`);
 
@@ -951,6 +1019,16 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         const newHouseValue = getHouseSeedsRef.current + 1;
         updateHouseSeeds(newHouseValue);
         console.log(`[SEEDS] Drop in ${isUpperPlayer ? 'UPPER' : 'LOWER'} house | house now: ${newHouseValue}`);
+
+        // Transfer one color from hand to house
+        const handColors = [...getColorsInHandRef.current];
+        const droppedColor = handColors.shift(); // Take first color from hand
+        updateColorsInHand(handColors);
+        if (droppedColor !== undefined) {
+          const houseColors = [...getHouseColorsRef.current, droppedColor];
+          updateHouseColors(houseColors);
+        }
+
         seedsInHand--;
         updateSeedsInHand(seedsInHand);
         if (seedsInHand > 0) {
@@ -1007,6 +1085,16 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       updateSeeds(newSeeds);
       console.log(`[SEEDS] Drop at hole ${currentIndex} | hole now: ${newSeeds[currentIndex]} | inHand: ${seedsInHand - 1}`);
 
+      // Transfer one color from hand to hole
+      const handColorsForHole = [...getColorsInHandRef.current];
+      const droppedColorForHole = handColorsForHole.shift(); // Take first color from hand
+      updateColorsInHand(handColorsForHole);
+      if (droppedColorForHole !== undefined) {
+        const newSeedColorsForHole = [...seedColorsRef.current.map(arr => [...arr])];
+        newSeedColorsForHole[currentIndex].push(droppedColorForHole);
+        updateSeedColors(newSeedColorsForHole);
+      }
+
       // Update seeds in hand
       seedsInHand--;
       updateSeedsInHand(seedsInHand);
@@ -1026,6 +1114,12 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         newSeeds[currentIndex] = 0;
         updateSeeds(newSeeds);
         console.log(`[SEEDS] Continue: pickup from hole ${currentIndex} | inHand: ${seedsInHand}`);
+
+        // Pick up colors from the hole into hand for continue sowing
+        const newSeedColorsContinue = [...seedColorsRef.current.map(arr => [...arr])];
+        const pickedColorsContinue = newSeedColorsContinue[currentIndex].splice(0); // Take all colors from hole
+        updateColorsInHand(pickedColorsContinue);
+        updateSeedColors(newSeedColorsContinue);
 
         // Pick up animation
         if (isUpperPlayer) {
@@ -1077,6 +1171,12 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         updateSeeds(newSeeds);
         console.log(`[SEEDS] Capture: pickup own hole ${currentIndex} | inHand: ${seedsInHand}`);
 
+        // Pick up colors from own hole for capture
+        const newSeedColorsCapture1 = [...seedColorsRef.current.map(arr => [...arr])];
+        const ownHoleColors = newSeedColorsCapture1[currentIndex].splice(0); // Take all colors from own hole
+        updateColorsInHand(ownHoleColors);
+        updateSeedColors(newSeedColorsCapture1);
+
         // Capturing ... (picking up from opposite hole)
         if (isUpperPlayer) {
           await updateCursorPositionUpper(holeRefs, oppositeIndex, verticalAdjustment);
@@ -1092,6 +1192,13 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         updateSeeds(newSeeds);
         console.log(`[SEEDS] Capture: pickup opposite hole ${oppositeIndex} | total captured: ${capturedSeeds}`);
 
+        // Pick up colors from opposite hole and add to hand
+        const newSeedColorsCapture2 = [...seedColorsRef.current.map(arr => [...arr])];
+        const oppositeHoleColors = newSeedColorsCapture2[oppositeIndex].splice(0); // Take all colors from opposite hole
+        const combinedCaptureColors = [...getColorsInHandRef.current, ...oppositeHoleColors];
+        updateColorsInHand(combinedCaptureColors);
+        updateSeedColors(newSeedColorsCapture2);
+
         await new Promise(resolve => setTimeout(resolve, CAPTURE_ANIMATION_DELAY)); // Animation delay
         if (shouldAbort()) return;
         // Send captured seeds to House
@@ -1105,13 +1212,19 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         updateHouseSeeds(newHouseValueAfterCapture);
         console.log(`[SEEDS] Captured ${capturedSeeds} to ${isUpperPlayer ? 'UPPER' : 'LOWER'} house | house now: ${newHouseValueAfterCapture}`);
 
+        // Transfer all captured colors from hand to house
+        const capturedColorsToHouse = [...getColorsInHandRef.current];
+        const newHouseColorsAfterCapture = [...getHouseColorsRef.current, ...capturedColorsToHouse];
+        updateHouseColors(newHouseColorsAfterCapture);
+        updateColorsInHand([]);
+
         // reset cursor position
         if (isUpperPlayer) {
           await updateCursorPositionUpper(holeRefs, startIndexUpper, verticalPosUpper);
         } else {
           await updateCursorPositionLower(holeRefs, startIndexLower, verticalPosLower);
         }
-      
+
         // Update the state with the new distribution of seeds
         seedsInHand = 0;
         updateSeedsInHand(seedsInHand);
@@ -1311,6 +1424,12 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
               canMoveLower={cursorVisibilityLower.canMove}
               isSowingUpper={isSowingUpper}
               isSowingLower={isSowingLower}
+              // Color data for persistent seed colors
+              seedColors={seedColors}
+              topHouseColors={topHouseColors}
+              lowHouseColors={lowHouseColors}
+              colorsInHandUpper={colorsInHandUpper}
+              colorsInHandLower={colorsInHandLower}
             />
             <div className='game-content'>
               <House position="lower" seedCount={lowHouseSeeds} ref={lowHouseRef}/>

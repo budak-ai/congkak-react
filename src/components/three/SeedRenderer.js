@@ -20,6 +20,10 @@ const SeedRenderer = ({
   lowHouseRef,
   burnedHolesUpper,
   burnedHolesLower,
+  // Color data for persistent seed colors
+  seedColors: seedColorIndices,
+  topHouseColors: topHouseColorIndices,
+  lowHouseColors: lowHouseColorIndices,
 }) => {
   const meshRef = useRef();
   const { domElementToWorld, getHoleRadius } = useScreenToWorld();
@@ -46,7 +50,7 @@ const SeedRenderer = ({
     })
   ), [seed]);
 
-  // Calculate all seed positions
+  // Calculate all seed positions with their persistent color indices
   const seedData = useMemo(() => {
     const data = [];
 
@@ -70,10 +74,14 @@ const SeedRenderer = ({
       const holeRadius = getHoleRadius(holeElement);
       const seedPositions = generateSeedLayout(seedCount, holeRadius);
 
-      seedPositions.forEach(([x, y, z]) => {
+      // Get the color indices for seeds in this hole
+      const holeColorIndices = seedColorIndices?.[holeIndex] || [];
+
+      seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
           position: [worldPos.x + x, y, worldPos.z + z],
           visible: true,
+          colorIndex: holeColorIndices[seedIdx] ?? (seedIdx % 7), // Fallback to cycling if no color data
         });
       });
     });
@@ -84,10 +92,11 @@ const SeedRenderer = ({
       const houseRadius = getHoleRadius(topHouseRef.current);
       const seedPositions = generateSeedLayout(topHouseSeeds, houseRadius);
 
-      seedPositions.forEach(([x, y, z]) => {
+      seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
           position: [worldPos.x + x, y, worldPos.z + z],
           visible: true,
+          colorIndex: topHouseColorIndices?.[seedIdx] ?? (seedIdx % 7), // Fallback to cycling
         });
       });
     }
@@ -98,10 +107,11 @@ const SeedRenderer = ({
       const houseRadius = getHoleRadius(lowHouseRef.current);
       const seedPositions = generateSeedLayout(lowHouseSeeds, houseRadius);
 
-      seedPositions.forEach(([x, y, z]) => {
+      seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
           position: [worldPos.x + x, y, worldPos.z + z],
           visible: true,
+          colorIndex: lowHouseColorIndices?.[seedIdx] ?? (seedIdx % 7), // Fallback to cycling
         });
       });
     }
@@ -116,6 +126,9 @@ const SeedRenderer = ({
     lowHouseRef,
     burnedHolesUpper,
     burnedHolesLower,
+    seedColorIndices,
+    topHouseColorIndices,
+    lowHouseColorIndices,
     domElementToWorld,
     getHoleRadius,
   ]);
@@ -126,16 +139,16 @@ const SeedRenderer = ({
 
     let instanceIndex = 0;
 
-    // Position visible seeds with colors
-    seedData.forEach(({ position, visible }) => {
+    // Position visible seeds with their persistent colors
+    seedData.forEach(({ position, visible, colorIndex }) => {
       if (visible && instanceIndex < MAX_INSTANCES) {
         tempObject.position.set(position[0], position[1], position[2]);
         tempObject.scale.set(1, 1, 1);
         tempObject.updateMatrix();
         meshRef.current.setMatrixAt(instanceIndex, tempObject.matrix);
 
-        // Assign color based on instance index (cycling through palette)
-        const color = seedColors[instanceIndex % seedColors.length];
+        // Use the persistent colorIndex from the data
+        const color = seedColors[colorIndex % seedColors.length];
         meshRef.current.setColorAt(instanceIndex, color);
 
         instanceIndex++;
