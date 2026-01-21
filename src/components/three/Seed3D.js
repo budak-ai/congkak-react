@@ -27,14 +27,20 @@ const Seed3D = ({ position = [0, 0, 0], color }) => {
 /**
  * Generate positions for seeds arranged in a hole
  * Creates a natural-looking pile with circular arrangement and stacking
+ * @param {number} count - Number of seeds
+ * @param {number} holeRadius - Radius of the hole
+ * @param {number} holeIndex - Index of the hole (for deterministic jitter)
  */
-export function generateSeedLayout(count, holeRadius = 0.5) {
+export function generateSeedLayout(count, holeRadius = 0.5, holeIndex = 0) {
   const { cluster } = threeConfig;
   const positions = [];
 
   if (count === 0) return positions;
 
   const spreadRadius = Math.min(holeRadius * 0.6, cluster.spreadRadius);
+
+  // Seeded random for deterministic but natural jitter
+  const random = seededRandom(holeIndex * 1000 + count);
 
   for (let i = 0; i < count; i++) {
     const layer = Math.floor(i / cluster.maxSeedsPerLayer);
@@ -51,9 +57,9 @@ export function generateSeedLayout(count, holeRadius = 0.5) {
     // Radius decreases slightly per layer (pyramid shape)
     const layerRadius = spreadRadius * (1 - layer * 0.15);
 
-    // Add slight randomness for natural look
-    const jitterX = (Math.random() - 0.5) * 0.05;
-    const jitterZ = (Math.random() - 0.5) * 0.05;
+    // Add deterministic slight randomness for natural look
+    const jitterX = (random() - 0.5) * 0.05;
+    const jitterZ = (random() - 0.5) * 0.05;
 
     positions.push([
       Math.cos(angle) * layerRadius + jitterX,

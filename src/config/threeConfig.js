@@ -70,6 +70,15 @@ const threeConfig = {
     shakeIntensity: 0.3, // Increased for visibility
   },
 
+  // Seed dancing animation (gentle wobble when cursor is near)
+  seedDancing: {
+    enabled: true,      // Toggle seed dancing on/off
+    intensity: 0.03,    // How much seeds move (in world units)
+    speed: 3,           // Animation speed multiplier
+    verticalBob: 0.02,  // Vertical bobbing amount
+    frameRate: 8,       // Target FPS for dancing (lower = choppier)
+  },
+
   // Colors
   colors: {
     seedPrimary: '#8B4513',    // Brown marble

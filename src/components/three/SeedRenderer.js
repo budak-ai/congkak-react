@@ -1,4 +1,5 @@
 import React, { useRef, useMemo, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import threeConfig from '../../config/threeConfig';
 import useScreenToWorld from '../../hooks/useScreenToWorld';
@@ -24,6 +25,8 @@ const SeedRenderer = ({
   seedColors: seedColorIndices,
   topHouseColors: topHouseColorIndices,
   lowHouseColors: lowHouseColorIndices,
+  // Visual effects
+  dancingEnabled = true,
 }) => {
   const meshRef = useRef();
   const { domElementToWorld, getHoleRadius } = useScreenToWorld();
@@ -72,7 +75,7 @@ const SeedRenderer = ({
 
       const worldPos = domElementToWorld(holeElement);
       const holeRadius = getHoleRadius(holeElement);
-      const seedPositions = generateSeedLayout(seedCount, holeRadius);
+      const seedPositions = generateSeedLayout(seedCount, holeRadius, holeIndex);
 
       // Get the color indices for seeds in this hole
       const holeColorIndices = seedColorIndices?.[holeIndex] || [];
@@ -168,6 +171,44 @@ const SeedRenderer = ({
       meshRef.current.instanceColor.needsUpdate = true;
     }
   }, [seedData, tempObject, seedColors]);
+
+  // Dancing animation - gentle wobble for seeds
+  const { seedDancing } = threeConfig;
+  const lastUpdateTime = useRef(0);
+  const frameCount = useRef(0);
+
+  useFrame((state) => {
+    if (!meshRef.current || !dancingEnabled || seedData.length === 0) return;
+
+    // Frame rate limiting - only update at target FPS
+    const frameInterval = 1 / seedDancing.frameRate;
+    const currentTime = state.clock.elapsedTime;
+
+    if (currentTime - lastUpdateTime.current < frameInterval) return;
+    lastUpdateTime.current = currentTime;
+    frameCount.current++;
+
+    seedData.forEach(({ position, visible }, idx) => {
+      if (!visible || idx >= MAX_INSTANCES) return;
+
+      // Random direction each frame
+      const wobbleX = (Math.random() - 0.5) * 2 * seedDancing.intensity;
+      const wobbleZ = (Math.random() - 0.5) * 2 * seedDancing.intensity;
+      const bobY = (Math.random() - 0.5) * 2 * seedDancing.verticalBob;
+
+      // Apply animated position
+      tempObject.position.set(
+        position[0] + wobbleX,
+        position[1] + bobY,
+        position[2] + wobbleZ
+      );
+      tempObject.scale.set(1, 1, 1);
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(idx, tempObject.matrix);
+    });
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
 
   return (
     <instancedMesh

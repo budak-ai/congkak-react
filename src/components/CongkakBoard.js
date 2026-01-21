@@ -150,6 +150,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const [matchEndReason, setMatchEndReason] = useState(''); // 'domination', 'concession', 'voluntary'
   const [concedeConfirmPlayer, setConcedeConfirmPlayer] = useState(null); // Which player is trying to concede
 
+  // Visual effects state
+  const [seedDancingEnabled, setSeedDancingEnabled] = useState(true); // Toggle seed dancing animation
+
   // Helper to check if a hole is burned
   const isHoleBurned = (index) => {
     if (index >= 0 && index <= 6) {
@@ -1430,6 +1433,14 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         </button>
       )}
 
+      {/* Seed Dancing Toggle */}
+      <button
+        className={`dancing-toggle ${seedDancingEnabled ? 'active' : ''}`}
+        onClick={() => setSeedDancingEnabled(!seedDancingEnabled)}
+        title={seedDancingEnabled ? 'Disable seed dancing' : 'Enable seed dancing'}
+      >
+        <i className="fa fa-music"></i>
+      </button>
 
       {/* Language Selector */}
       <LanguageSelector />
@@ -1489,6 +1500,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
               isSowingLower={isSowingLower}
               handWaitingUpper={handWaitingUpper}
               handWaitingLower={handWaitingLower}
+              seedDancingEnabled={seedDancingEnabled}
               // Color data for persistent seed colors
               seedColors={seedColors}
               topHouseColors={topHouseColors}

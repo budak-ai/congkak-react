@@ -30,6 +30,7 @@ const Scene = ({
   isSowingLower,
   handWaitingUpper,
   handWaitingLower,
+  seedDancingEnabled,
   // Color data for persistent seed colors
   seedColors,
   topHouseColors,
@@ -71,6 +72,7 @@ const Scene = ({
         seedColors={seedColors}
         topHouseColors={topHouseColors}
         lowHouseColors={lowHouseColors}
+        dancingEnabled={seedDancingEnabled}
       />
 
       {/* Upper player hand cursor */}

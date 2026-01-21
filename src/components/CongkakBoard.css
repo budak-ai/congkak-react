@@ -138,6 +138,40 @@ body {
   background-color: rgba(180, 60, 60, 1);
 }
 
+.dancing-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 7rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(100, 100, 100, 0.7);
+  color: #EBEBD0;
+  border: 2px solid #EBEBD0;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.dancing-toggle:hover {
+  background-color: rgba(100, 100, 100, 0.9);
+}
+
+.dancing-toggle.active {
+  background-color: rgba(147, 112, 219, 0.9);
+  border-color: #d4a8ff;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(147, 112, 219, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(147, 112, 219, 0.8);
+  }
+}
+
 .button .refresh {
   color: black;
   background-color: #4f4c48;
