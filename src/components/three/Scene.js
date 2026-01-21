@@ -28,6 +28,8 @@ const Scene = ({
   canMoveLower,
   isSowingUpper,
   isSowingLower,
+  handWaitingUpper,
+  handWaitingLower,
   // Color data for persistent seed colors
   seedColors,
   topHouseColors,
@@ -80,6 +82,7 @@ const Scene = ({
         canMove={canMoveUpper}
         isUpper={true}
         isSowing={isSowingUpper}
+        waiting={handWaitingUpper}
         holeRadius={2.5}
         colorsInHand={colorsInHandUpper}
       />
@@ -93,6 +96,7 @@ const Scene = ({
         canMove={canMoveLower}
         isUpper={false}
         isSowing={isSowingLower}
+        waiting={handWaitingLower}
         holeRadius={2.5}
         colorsInHand={colorsInHandLower}
       />

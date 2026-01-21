@@ -17,6 +17,7 @@ const Hand3D = ({
   canMove,
   isUpper,
   isSowing,
+  waiting = false, // Waiting for collision to clear
   holeRadius = 1.5, // Default hole radius in world units
   colorsInHand = [], // Color indices for seeds in hand
 }) => {
@@ -32,10 +33,12 @@ const Hand3D = ({
   const visibleRef = useRef(visible);
   const shakeRef = useRef(shake);
   const canMoveRef = useRef(canMove);
+  const waitingRef = useRef(waiting);
   positionRef.current = position;
   visibleRef.current = visible;
   shakeRef.current = shake;
   canMoveRef.current = canMove;
+  waitingRef.current = waiting;
 
   // Hand color based on player
   const handColor = isUpper ? colors.handUpper : colors.handLower;
@@ -66,16 +69,31 @@ const Hand3D = ({
       shakeZ = Math.cos(t * 1.3) * animation.shakeIntensity * 0.7;
     }
 
+    // Waiting animation - hovering/bobbing effect when waiting for collision to clear
+    let waitingY = 0;
+    let waitingOffset = 0;
+    if (waitingRef.current) {
+      const t = state.clock.elapsedTime;
+      // Vertical bobbing motion
+      waitingY = Math.sin(t * 4) * 0.15;
+      // Slight horizontal hovering offset (away from center)
+      waitingOffset = Math.sin(t * 3) * 0.1;
+    }
+
     // Update position
     groupRef.current.position.set(
-      currentPos.current.x + shakeX,
-      currentPos.current.y,
+      currentPos.current.x + shakeX + waitingOffset,
+      currentPos.current.y + waitingY,
       currentPos.current.z + shakeZ
     );
 
-    // Pulse glow effect when can move
+    // Pulse glow effect when can move, or faster pulse when waiting
     const baseScale = 1.2;
-    if (canMoveRef.current) {
+    if (waitingRef.current) {
+      // Faster, smaller pulse when waiting
+      const pulse = Math.sin(state.clock.elapsedTime * 8) * 0.05 + 1;
+      groupRef.current.scale.setScalar(baseScale * pulse);
+    } else if (canMoveRef.current) {
       const pulse = Math.sin(state.clock.elapsedTime * 5) * 0.1 + 1;
       groupRef.current.scale.setScalar(baseScale * pulse);
     } else {

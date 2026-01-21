@@ -33,6 +33,9 @@ const CongkakCanvas = ({
   // Game state
   isSowingUpper,
   isSowingLower,
+  // Collision waiting states
+  handWaitingUpper,
+  handWaitingLower,
   // Color data for persistent seed colors
   seedColors,
   topHouseColors,
@@ -78,6 +81,8 @@ const CongkakCanvas = ({
             canMoveLower={canMoveLower}
             isSowingUpper={isSowingUpper}
             isSowingLower={isSowingLower}
+            handWaitingUpper={handWaitingUpper}
+            handWaitingLower={handWaitingLower}
             // Color data
             seedColors={seedColors}
             topHouseColors={topHouseColors}

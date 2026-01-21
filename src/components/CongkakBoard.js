@@ -34,6 +34,7 @@ const {
   CAPTURE_ANIMATION_DELAY,
   CONTINUE_SOWING_DELAY,
   INITIAL_DELAY,
+  COLLISION_WAIT_DELAY,
 } = config;
 
 const {
@@ -95,6 +96,12 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   // Refs for real-time sowing state (to avoid stale closure in freeplay transition)
   const isSowingUpperRef = useRef(false);
   const isSowingLowerRef = useRef(false);
+
+  // Collision tracking for simultaneous sowing
+  const [handWaitingUpper, setHandWaitingUpper] = useState(false);
+  const [handWaitingLower, setHandWaitingLower] = useState(false);
+  const sowingPositionUpperRef = useRef(null); // Current hole index during sowing
+  const sowingPositionLowerRef = useRef(null); // Current hole index during sowing
 
 
   const [cursorVisibilityUpper, setCursorVisibilityUpper] = useState({ visible: true });
@@ -287,6 +294,41 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const updateIsSowingLower = (value) => {
     isSowingLowerRef.current = value;
     setIsSowingLower(value);
+  };
+
+  // Helper to wait for collision to clear (used during simultaneous sowing)
+  // targetIndex: the hole index this hand wants to move to
+  // isUpperPlayer: whether this is the upper player's hand
+  // Returns a promise that resolves when collision clears or timeout
+  const waitForCollisionClear = async (targetIndex, isUpperPlayer) => {
+    const otherPositionRef = isUpperPlayer ? sowingPositionLowerRef : sowingPositionUpperRef;
+    const setWaiting = isUpperPlayer ? setHandWaitingUpper : setHandWaitingLower;
+    const maxWaitTime = 3000; // Maximum wait time to prevent deadlock
+    const startTime = Date.now();
+
+    // Check if collision exists
+    if (otherPositionRef.current !== targetIndex) {
+      return; // No collision, proceed immediately
+    }
+
+    // Collision detected - start waiting
+    console.log(`[COLLISION] ${isUpperPlayer ? 'UPPER' : 'LOWER'} waiting at hole ${targetIndex}`);
+    setWaiting(true);
+
+    // Poll until collision clears or timeout
+    while (otherPositionRef.current === targetIndex) {
+      if (Date.now() - startTime > maxWaitTime) {
+        console.log(`[COLLISION] ${isUpperPlayer ? 'UPPER' : 'LOWER'} timeout waiting at hole ${targetIndex}`);
+        break;
+      }
+      if (gamePausedRef.current || resetRequestedRef.current) {
+        break; // Abort if game paused/reset
+      }
+      await new Promise(resolve => setTimeout(resolve, COLLISION_WAIT_DELAY));
+    }
+
+    setWaiting(false);
+    console.log(`[COLLISION] ${isUpperPlayer ? 'UPPER' : 'LOWER'} proceeding from hole ${targetIndex}`);
   };
 
   // Helpers to update freeplay waiting state and ref atomically
@@ -953,6 +995,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     // Start sowing
     updateIsSowing(true);
 
+    // Track sowing position for collision detection
+    const mySowingPositionRef = isUpperPlayer ? sowingPositionUpperRef : sowingPositionLowerRef;
+
     let currentIndex = index;
     let newSeeds = [...seedsRef.current]; // Use ref for real-time state in freeplay
     let seedsInHand = isContinuation ? (isUpperPlayer ? currentSeedsInHandUpper : newSeeds[index]) : newSeeds[index];
@@ -991,7 +1036,8 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     const totalAfterPickup = newSeeds.reduce((a, b) => a + b, 0) + topHouseSeedsRef.current + lowHouseSeedsRef.current + seedsInHand;
     console.log(`[SEEDS] Pickup from hole ${index} | inHand: ${seedsInHand} | total: ${totalAfterPickup}`);
 
-    // Pick up animation
+    // Pick up animation - also track initial sowing position
+    mySowingPositionRef.current = currentIndex;
     if (isUpperPlayer) {
       await updateCursorPositionUpper(holeRefs, currentIndex, 0);
     } else {
@@ -1070,6 +1116,15 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
           currentIndex = (currentIndex + 1) % HOLE_NUMBERS;
         }
       }
+
+      // Check for collision before moving to this hole (freeplay simultaneous sowing)
+      if (gamePhase === FREEPLAY) {
+        await waitForCollisionClear(currentIndex, isUpperPlayer);
+        if (shouldAbort()) return;
+      }
+
+      // Update sowing position and move cursor
+      mySowingPositionRef.current = currentIndex;
 
       if (isUpperPlayer) {
         await updateCursorPositionUpper(holeRefs, currentIndex, verticalAdjustment);
@@ -1178,6 +1233,13 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         updateSeedColors(newSeedColorsCapture1);
 
         // Capturing ... (picking up from opposite hole)
+        // Check for collision before moving to opposite hole (freeplay simultaneous sowing)
+        if (gamePhase === FREEPLAY) {
+          await waitForCollisionClear(oppositeIndex, isUpperPlayer);
+          if (shouldAbort()) return;
+        }
+        mySowingPositionRef.current = oppositeIndex;
+
         if (isUpperPlayer) {
           await updateCursorPositionUpper(holeRefs, oppositeIndex, verticalAdjustment);
         } else {
@@ -1232,6 +1294,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     }
     // End of sowing
     updateIsSowing(false);
+    mySowingPositionRef.current = null; // Clear sowing position for collision tracking
 
     // Handle game phase transitions
     if (gamePhase === FREEPLAY) {
@@ -1424,6 +1487,8 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
               canMoveLower={cursorVisibilityLower.canMove}
               isSowingUpper={isSowingUpper}
               isSowingLower={isSowingLower}
+              handWaitingUpper={handWaitingUpper}
+              handWaitingLower={handWaitingLower}
               // Color data for persistent seed colors
               seedColors={seedColors}
               topHouseColors={topHouseColors}
