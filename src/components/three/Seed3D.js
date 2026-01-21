@@ -82,80 +82,256 @@ function seededRandom(seed) {
   };
 }
 
-/**
- * Generate positions for seeds in house with collision detection
- * Seeds don't overlap and stack realistically within bounds
- */
-export function generateHouseSeedLayout(count, houseRadius = 1.0) {
-  const { seed } = threeConfig;
-  const positions = [];
+// Cache for house seed positions to maintain persistence
+const housePositionCache = {
+  top: { positions: [], houseRadius: 0 },
+  low: { positions: [], houseRadius: 0 },
+};
 
-  if (count === 0) return positions;
+/**
+ * Generate positions for seeds in house with gravity simulation
+ * Seeds drop and settle naturally, rolling into gaps
+ * Positions are cached so existing seeds don't move when new ones are added
+ */
+export function generateHouseSeedLayout(count, houseRadius = 1.0, houseId = 'top') {
+  const { seed } = threeConfig;
+
+  if (count === 0) return [];
 
   const seedRadius = seed.radius;
-  const minDistance = seedRadius * 2.05;
-  const maxRadius = houseRadius * 0.7;
-  const layerHeight = seedRadius * 1.6;
+  const seedDiameter = seedRadius * 2;
+  const maxRadius = houseRadius * 0.65;
 
-  // Seeded random for deterministic but natural positions
-  const random = seededRandom(count * 1000 + Math.floor(houseRadius * 100));
+  // Get or initialize cache for this house
+  const cache = housePositionCache[houseId] || { positions: [], houseRadius: 0 };
 
-  // Check collision with all existing positions
-  const collides = (x, y, z) => {
-    for (const [ex, ey, ez] of positions) {
-      const dx = x - ex;
-      const dy = y - ey;
-      const dz = z - ez;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist < minDistance * 0.95) return true;
-    }
-    return false;
+  // Reset cache if house radius changed
+  if (cache.houseRadius !== houseRadius) {
+    cache.positions = [];
+    cache.houseRadius = houseRadius;
+  }
+
+  // If we already have enough cached positions, return slice
+  if (cache.positions.length >= count) {
+    return cache.positions.slice(0, count);
+  }
+
+  // We need to generate more positions - start from where we left off
+  const positions = cache.positions.map(p => [...p]); // Copy existing
+  const startIndex = positions.length;
+
+  // Seeded random - use a fixed seed per house so it's deterministic
+  const baseSeed = houseId === 'top' ? 12345 : 67890;
+  const random = seededRandom(baseSeed + startIndex);
+
+  // Get distance between two points
+  const distance = (x1, y1, z1, x2, y2, z2) => {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    const dz = z1 - z2;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   };
 
-  // Try to place each seed with random position, biased toward center
-  for (let i = 0; i < count; i++) {
-    let placed = false;
+  // Check if position collides with any existing seed
+  const getCollision = (x, y, z) => {
+    for (let i = 0; i < positions.length; i++) {
+      const [ex, ey, ez] = positions[i];
+      const dist = distance(x, y, z, ex, ey, ez);
+      if (dist < seedDiameter * 0.98) {
+        return { collides: true, index: i, dist };
+      }
+    }
+    return { collides: false };
+  };
 
-    // Try multiple times to find a valid spot
-    for (let attempt = 0; attempt < 100 && !placed; attempt++) {
-      // Random angle
-      const angle = random() * Math.PI * 2;
-      // Bias toward center (square root for uniform disk distribution, then bias)
-      const rNorm = Math.pow(random(), 1.5); // Bias toward center
-      const r = rNorm * maxRadius;
+  // Simulate dropping a seed and letting it settle
+  const dropSeed = (startX, startZ) => {
+    let x = startX;
+    let z = startZ;
+    let y = 10; // Start high
 
-      const x = Math.cos(angle) * r;
-      const z = Math.sin(angle) * r;
+    const gravity = 0.05;
+    const friction = 0.3;
+    let vy = 0;
+    let vx = 0;
+    let vz = 0;
+    let settled = false;
+    let iterations = 0;
+    const maxIterations = 500;
 
-      // Try each layer from bottom up
-      for (let layer = 0; layer < 8 && !placed; layer++) {
-        const y = seedRadius + layer * layerHeight;
+    while (!settled && iterations < maxIterations) {
+      iterations++;
 
-        // Upper layers should be smaller radius
-        const layerMaxR = maxRadius * (1 - layer * 0.1);
-        if (r > layerMaxR) continue;
+      // Apply gravity
+      vy -= gravity;
+      y += vy;
+      x += vx;
+      z += vz;
 
-        if (!collides(x, y, z)) {
-          positions.push([x, y, z]);
-          placed = true;
+      // Ground collision
+      if (y <= seedRadius) {
+        y = seedRadius;
+        vy = 0;
+        vx *= friction;
+        vz *= friction;
+
+        // Check if settled (very low velocity)
+        if (Math.abs(vx) < 0.001 && Math.abs(vz) < 0.001) {
+          settled = true;
+        }
+      }
+
+      // Wall collision (house boundary)
+      const distFromCenter = Math.sqrt(x * x + z * z);
+      if (distFromCenter > maxRadius - seedRadius) {
+        // Push back toward center
+        const nx = x / distFromCenter;
+        const nz = z / distFromCenter;
+        x = nx * (maxRadius - seedRadius);
+        z = nz * (maxRadius - seedRadius);
+        // Reflect velocity
+        const dot = vx * nx + vz * nz;
+        vx = (vx - 2 * dot * nx) * friction;
+        vz = (vz - 2 * dot * nz) * friction;
+      }
+
+      // Collision with other seeds
+      const collision = getCollision(x, y, z);
+      if (collision.collides) {
+        const other = positions[collision.index];
+        const [ox, oy, oz] = other;
+
+        // Calculate collision normal
+        const dx = x - ox;
+        const dy = y - oy;
+        const dz = z - oz;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (dist > 0) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const nz = dz / dist;
+
+          // Push out of collision
+          const overlap = seedDiameter - dist;
+          x += nx * overlap * 0.5;
+          y += ny * overlap * 0.5;
+          z += nz * overlap * 0.5;
+
+          // Roll off - apply tangential velocity
+          if (ny > 0.3) {
+            // On top of another seed - roll off
+            vx += nx * 0.02 + (random() - 0.5) * 0.01;
+            vz += nz * 0.02 + (random() - 0.5) * 0.01;
+            vy = Math.min(vy, -0.01);
+          } else {
+            // Side collision - bounce slightly
+            const dot = vx * nx + vy * ny + vz * nz;
+            vx = (vx - 1.5 * dot * nx) * friction;
+            vy = (vy - 1.5 * dot * ny) * friction;
+            vz = (vz - 1.5 * dot * nz) * friction;
+          }
+        }
+      }
+
+      // Check if settled
+      if (y <= seedRadius + 0.001 && Math.abs(vy) < 0.01 && Math.abs(vx) < 0.005 && Math.abs(vz) < 0.005) {
+        // Additional check: not colliding
+        if (!getCollision(x, y, z).collides) {
+          settled = true;
         }
       }
     }
 
-    // Fallback: if still not placed, force it somewhere
-    if (!placed && positions.length < count) {
-      const angle = random() * Math.PI * 2;
-      const r = random() * maxRadius * 0.5;
-      const layer = Math.floor(positions.length / 6);
-      positions.push([
-        Math.cos(angle) * r,
-        seedRadius + layer * layerHeight,
-        Math.sin(angle) * r,
-      ]);
+    // Final ground clamp
+    y = Math.max(y, seedRadius);
+
+    // Final bounds check
+    const finalDist = Math.sqrt(x * x + z * z);
+    if (finalDist > maxRadius - seedRadius) {
+      const scale = (maxRadius - seedRadius) / finalDist;
+      x *= scale;
+      z *= scale;
     }
+
+    return [x, y, z];
+  };
+
+  // Drop only NEW seeds (ones beyond what's cached)
+  for (let i = startIndex; i < count; i++) {
+    // Random drop position within house bounds
+    const angle = random() * Math.PI * 2;
+    const r = random() * maxRadius * 0.8;
+    const startX = Math.cos(angle) * r;
+    const startZ = Math.sin(angle) * r;
+
+    const [x, y, z] = dropSeed(startX, startZ);
+    positions.push([x, y, z]);
   }
 
+  // Post-process: resolve overlaps only for new seeds against all seeds
+  const resolveNewSeedOverlaps = () => {
+    const minDist = seedDiameter * 1.0;
+
+    for (let iter = 0; iter < 50; iter++) {
+      let moved = false;
+
+      // Only move new seeds, check against all seeds
+      for (let i = startIndex; i < positions.length; i++) {
+        for (let j = 0; j < positions.length; j++) {
+          if (i === j) continue;
+
+          const [x1, y1, z1] = positions[i];
+          const [x2, y2, z2] = positions[j];
+
+          const dx = x1 - x2;
+          const dy = y1 - y2;
+          const dz = z1 - z2;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (dist < minDist && dist > 0) {
+            moved = true;
+            const overlap = minDist - dist;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const nz = dz / dist;
+
+            // Only move the new seed (index i)
+            positions[i][0] += nx * overlap;
+            positions[i][1] += Math.abs(ny * overlap); // Push up
+            positions[i][2] += nz * overlap;
+
+            // Clamp to bounds
+            const d = Math.sqrt(positions[i][0] ** 2 + positions[i][2] ** 2);
+            if (d > maxRadius - seedRadius) {
+              const scale = (maxRadius - seedRadius) / d;
+              positions[i][0] *= scale;
+              positions[i][2] *= scale;
+            }
+            positions[i][1] = Math.max(positions[i][1], seedRadius);
+          }
+        }
+      }
+
+      if (!moved) break;
+    }
+  };
+
+  resolveNewSeedOverlaps();
+
+  // Update cache with new positions
+  cache.positions = positions.map(p => [...p]);
+  housePositionCache[houseId] = cache;
+
   return positions;
+}
+
+/**
+ * Clear house position cache (call on game reset)
+ */
+export function clearHousePositionCache() {
+  housePositionCache.top = { positions: [], houseRadius: 0 };
+  housePositionCache.low = { positions: [], houseRadius: 0 };
 }
 
 export default Seed3D;

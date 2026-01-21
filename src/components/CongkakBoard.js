@@ -21,6 +21,7 @@ import { useSeedEventLog } from '../hooks/useSeedEventLog';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 import CongkakCanvas from './three/CongkakCanvas';
+import { clearHousePositionCache } from './three/Seed3D';
 
 const {
   INIT_SEEDS_COUNT,
@@ -456,6 +457,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     updateLowHouseColors([]);
     updateColorsInHandUpper([]);
     updateColorsInHandLower([]);
+
+    // Clear house position cache for fresh seed arrangements
+    clearHousePositionCache();
 
     // Reset game state - show start button
     setGamePhase(COUNTDOWN);

@@ -93,7 +93,7 @@ const SeedRenderer = ({
     if (topHouseRef?.current && topHouseSeeds > 0) {
       const worldPos = domElementToWorld(topHouseRef.current);
       const houseRadius = getHoleRadius(topHouseRef.current);
-      const seedPositions = generateHouseSeedLayout(topHouseSeeds, houseRadius);
+      const seedPositions = generateHouseSeedLayout(topHouseSeeds, houseRadius, 'top');
 
       seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
@@ -108,7 +108,7 @@ const SeedRenderer = ({
     if (lowHouseRef?.current && lowHouseSeeds > 0) {
       const worldPos = domElementToWorld(lowHouseRef.current);
       const houseRadius = getHoleRadius(lowHouseRef.current);
-      const seedPositions = generateHouseSeedLayout(lowHouseSeeds, houseRadius);
+      const seedPositions = generateHouseSeedLayout(lowHouseSeeds, houseRadius, 'low');
 
       seedPositions.forEach(([x, y, z], seedIdx) => {
         data.push({
