@@ -1,0 +1,89 @@
+.fullscreen-gate {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #1a1410 0%, #2d2418 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.fullscreen-gate-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 90vw;
+}
+
+.fullscreen-gate-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.fullscreen-gate-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 2.5rem;
+  color: #c9a84c;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: 0.2em;
+}
+
+.fullscreen-gate-subtitle {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0 0 2rem 0;
+  letter-spacing: 0.1em;
+}
+
+.fullscreen-gate-btn {
+  background: linear-gradient(135deg, #4d6a2b, #5d7a3b);
+  color: #EBEBD0;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(77, 106, 43, 0.3);
+}
+
+.fullscreen-gate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(77, 106, 43, 0.4);
+}
+
+.fullscreen-gate-btn:active {
+  transform: translateY(0);
+}
+
+.fullscreen-gate-alt {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.fullscreen-gate-pwa {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #333;
+}
+
+.fullscreen-gate-divider {
+  color: #555;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.fullscreen-gate-pwa p {
+  color: #777;
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.fullscreen-gate-pwa-hint {
+  color: #555 !important;
+  font-size: 0.75rem !important;
+}

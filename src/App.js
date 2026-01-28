@@ -3,7 +3,7 @@ import CongkakBoard from './components/CongkakBoard';
 import HomeMenu from './components/HomeMenu';
 import SettingsModal from './components/SettingsModal';
 import InfoModal from './components/InfoModal';
-import OrientationLock from './components/OrientationLock';
+import FullscreenGate from './components/FullscreenGate';
 import { LanguageProvider } from './context/LanguageContext';
 
 const App = () => {
@@ -29,37 +29,36 @@ const App = () => {
 
   return (
     <LanguageProvider>
-      <div className="App">
-        {/* Portrait orientation blocker for mobile */}
-        <OrientationLock />
+      <FullscreenGate>
+        <div className="App">
+          {!gameStarted && (
+            <HomeMenu
+              onPlay={handlePlay}
+              onRules={() => setShowRules(true)}
+              onSettings={() => setShowSettings(true)}
+            />
+          )}
 
-        {!gameStarted && (
-          <HomeMenu
-            onPlay={handlePlay}
-            onRules={() => setShowRules(true)}
-            onSettings={() => setShowSettings(true)}
-          />
-        )}
+          {gameStarted && (
+            <>
+              <CongkakBoard gameMode={gameMode} onMenuOpen={handleOpenMenu} />
 
-        {gameStarted && (
-          <>
-            <CongkakBoard gameMode={gameMode} onMenuOpen={handleOpenMenu} />
+              {showMenuOverlay && (
+                <HomeMenu
+                  isOverlay
+                  onPlay={handleCloseMenu}
+                  onRules={() => setShowRules(true)}
+                  onSettings={() => setShowSettings(true)}
+                  onClose={handleCloseMenu}
+                />
+              )}
+            </>
+          )}
 
-            {showMenuOverlay && (
-              <HomeMenu
-                isOverlay
-                onPlay={handleCloseMenu}
-                onRules={() => setShowRules(true)}
-                onSettings={() => setShowSettings(true)}
-                onClose={handleCloseMenu}
-              />
-            )}
-          </>
-        )}
-
-        <InfoModal isOpen={showRules} toggleModal={() => setShowRules(false)} />
-        <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
-      </div>
+          <InfoModal isOpen={showRules} toggleModal={() => setShowRules(false)} />
+          <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        </div>
+      </FullscreenGate>
     </LanguageProvider>
   );
 };
