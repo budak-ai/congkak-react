@@ -2,6 +2,7 @@
 body {
   margin: 0;  /* Remove default margin */
   height: 100vh;
+  height: 100dvh; /* Mobile fix */
   display: flex;
   justify-content: center; /* Center horizontally */
   align-items: center; /* Center vertically */

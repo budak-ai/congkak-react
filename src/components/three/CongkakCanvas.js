@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import Scene from './Scene';
 import './CongkakCanvas.css';
@@ -45,6 +45,32 @@ const CongkakCanvas = ({
   colorsInHandUpper,
   colorsInHandLower,
 }) => {
+  // Force re-render on resize to recalculate positions
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Small delay to let layout settle
+      setTimeout(() => forceUpdate(prev => prev + 1), 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    // Handle mobile address bar hide/show
+    const visualViewport = window.visualViewport;
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      if (visualViewport) {
+        visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
   return (
     <div className="congkak-canvas-container">
       <Canvas
@@ -57,8 +83,20 @@ const CongkakCanvas = ({
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
         style={{ pointerEvents: 'none' }}
-        onCreated={({ camera }) => {
+        onCreated={({ camera, gl }) => {
           camera.lookAt(0, 0, 0);
+          // Handle canvas resize
+          const handleResize = () => {
+            const container = gl.domElement.parentElement;
+            if (container) {
+              gl.setSize(container.clientWidth, container.clientHeight);
+              camera.aspect = container.clientWidth / container.clientHeight;
+              camera.updateProjectionMatrix();
+            }
+          };
+          window.addEventListener('resize', handleResize);
+          // Initial size sync
+          handleResize();
         }}
       >
         <Suspense fallback={null}>

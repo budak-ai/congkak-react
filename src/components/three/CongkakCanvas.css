@@ -5,13 +5,19 @@
   top: 0;
   left: 0;
   width: 100vw;
+  /* Use dvh for mobile (dynamic viewport height), fallback to vh */
   height: 100vh;
+  height: 100dvh;
   pointer-events: none; /* Allow clicks to pass through to DOM */
   z-index: 100;
+  /* Prevent any transforms that could cause offset */
+  transform: translateZ(0);
 }
 
 .congkak-canvas-container canvas {
   display: block !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Make DOM holes invisible when 3D is active */
