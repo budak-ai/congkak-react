@@ -1,23 +1,7 @@
-import React from 'react';
+// OrientationLock - CSS-only solution, no component needed
+// Just importing the CSS to force landscape on mobile
 import './OrientationLock.css';
 
-/**
- * Shows a "rotate device" overlay when mobile is in portrait mode
- */
-const OrientationLock = () => {
-  return (
-    <div className="orientation-lock">
-      <div className="orientation-lock-content">
-        <div className="orientation-lock-icon">📱↔️</div>
-        <div className="orientation-lock-text">
-          Please rotate your device
-        </div>
-        <div className="orientation-lock-subtext">
-          Sila pusingkan peranti anda
-        </div>
-      </div>
-    </div>
-  );
-};
+const OrientationLock = () => null;
 
 export default OrientationLock;
