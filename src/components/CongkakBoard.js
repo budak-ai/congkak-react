@@ -109,10 +109,9 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const [cursorVisibilityUpper, setCursorVisibilityUpper] = useState({ visible: true });
   const [cursorVisibilityLower, setCursorVisibilityLower] = useState({ visible: true });
 
-  // const startIndexUpper = Math.round((MIN_INDEX_UPPER + MAX_INDEX_UPPER) / 2);
-  // const startIndexLower = Math.round((MIN_INDEX_LOWER + MAX_INDEX_LOWER) / 2);
-  const startIndexUpper = MIN_INDEX_UPPER;
-  const startIndexLower = MIN_INDEX_LOWER;
+  // Start in the middle so hands don't block houses
+  const startIndexUpper = Math.round((MIN_INDEX_UPPER + MAX_INDEX_UPPER) / 2); // index 3
+  const startIndexLower = Math.round((MIN_INDEX_LOWER + MAX_INDEX_LOWER) / 2); // index 10
 
   const [currentHoleIndexUpper, setCurrentHoleIndexUpper] = useState(startIndexUpper); 
   const [currentHoleIndexLower, setCurrentHoleIndexLower] = useState(startIndexLower);

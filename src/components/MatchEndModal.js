@@ -1,7 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { t } from '../config/translations';
 import './MatchEndModal.css';
+
+// Animated counter hook
+const useCountUp = (target, duration = 1500, startDelay = 300) => {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (!started) {
+      const delayTimer = setTimeout(() => setStarted(true), startDelay);
+      return () => clearTimeout(delayTimer);
+    }
+
+    if (target === 0) {
+      setCount(0);
+      return;
+    }
+
+    const startTime = Date.now();
+    const endTime = startTime + duration;
+
+    const tick = () => {
+      const now = Date.now();
+      if (now >= endTime) {
+        setCount(target);
+        return;
+      }
+
+      const progress = (now - startTime) / duration;
+      // Ease out cubic for satisfying deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * target));
+
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+  }, [target, duration, started, startDelay]);
+
+  return count;
+};
 
 const MatchEndModal = ({
   isOpen,
@@ -14,6 +54,10 @@ const MatchEndModal = ({
   onMainMenu
 }) => {
   const { language } = useLanguage();
+
+  // Animated counters
+  const animatedTopSeeds = useCountUp(isOpen ? topHouseSeeds : 0, 1500, 500);
+  const animatedLowSeeds = useCountUp(isOpen ? lowHouseSeeds : 0, 1500, 500);
 
   if (!isOpen) return null;
 
@@ -29,6 +73,9 @@ const MatchEndModal = ({
     return '';
   };
 
+  const topIsWinner = winner === 'PLAYER_UPPER';
+  const lowIsWinner = winner === 'PLAYER_LOWER';
+
   return (
     <div className="match-end-overlay">
       <div className="match-end-modal">
@@ -37,13 +84,13 @@ const MatchEndModal = ({
         {reason && <div className="match-end-reason">{getReasonText()}</div>}
 
         <div className="match-end-stats">
-          <div className="match-end-stat">
+          <div className={`match-end-stat ${topIsWinner ? 'winner' : ''}`}>
             <span className="match-end-stat-label">{t('round.upperSeeds', language)}</span>
-            <span className="match-end-stat-value">{topHouseSeeds}</span>
+            <span className="match-end-stat-value counting">{animatedTopSeeds}</span>
           </div>
-          <div className="match-end-stat">
+          <div className={`match-end-stat ${lowIsWinner ? 'winner' : ''}`}>
             <span className="match-end-stat-label">{t('round.lowerSeeds', language)}</span>
-            <span className="match-end-stat-value">{lowHouseSeeds}</span>
+            <span className="match-end-stat-value counting">{animatedLowSeeds}</span>
           </div>
           <div className="match-end-stat">
             <span className="match-end-stat-label">{t('round.number', language)}s</span>
