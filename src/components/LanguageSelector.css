@@ -1,19 +1,22 @@
 .language-selector {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: rgba(77, 106, 43, 0.9);
-  color: #EBEBD0;
-  border: 2px solid #EBEBD0;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: bold;
+  top: 1.25rem;
+  right: 1.25rem;
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  color: rgba(196, 155, 90, 0.35);
+  border: 1px solid rgba(196, 155, 90, 0.12);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  z-index: 100;
-  transition: background-color 0.2s;
+  z-index: 1001;
+  transition: all 0.3s ease;
 }
 
 .language-selector:hover {
-  background-color: rgba(77, 106, 43, 1);
+  color: rgba(196, 155, 90, 0.6);
+  border-color: rgba(196, 155, 90, 0.25);
+  background: rgba(196, 155, 90, 0.04);
 }
