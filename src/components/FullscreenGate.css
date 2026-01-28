@@ -1,27 +1,13 @@
-/* Force landscape orientation via CSS rotation */
-/* When phone is in portrait, rotate entire app 90 degrees */
-
-@media screen and (orientation: portrait) {
-  html, body {
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  #root {
-    position: fixed;
-    width: 100vh;
-    height: 100vw;
-    transform: rotate(90deg);
-    transform-origin: bottom left;
-    top: -100vw;
-    left: 0;
-    overflow: hidden;
-  }
+/* Container for orientation locking */
+.orientation-lock-container {
+  background: #1a1410;
 }
 
-/* Ensure no scrolling in landscape either */
-@media screen and (orientation: landscape) {
-  html, body {
-    overflow: hidden;
-  }
+html, body {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
