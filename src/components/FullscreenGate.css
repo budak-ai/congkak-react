@@ -1,13 +1,13 @@
-/* Container for orientation locking */
-.orientation-lock-container {
-  background: #1a1410;
-}
-
 html, body {
   overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
   position: fixed !important;
   width: 100% !important;
   height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
+}
+
+.locked-landscape {
+  background: #1a1410;
+  overflow: hidden;
 }
