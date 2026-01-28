@@ -3,6 +3,7 @@ import CongkakBoard from './components/CongkakBoard';
 import HomeMenu from './components/HomeMenu';
 import SettingsModal from './components/SettingsModal';
 import InfoModal from './components/InfoModal';
+import OrientationLock from './components/OrientationLock';
 import { LanguageProvider } from './context/LanguageContext';
 
 const App = () => {
@@ -29,6 +30,9 @@ const App = () => {
   return (
     <LanguageProvider>
       <div className="App">
+        {/* Portrait orientation blocker for mobile */}
+        <OrientationLock />
+
         {!gameStarted && (
           <HomeMenu
             onPlay={handlePlay}

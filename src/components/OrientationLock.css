@@ -1,0 +1,58 @@
+/* Only show on mobile portrait */
+.orientation-lock {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1410;
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+.orientation-lock-content {
+  text-align: center;
+  color: #EBEBD0;
+  padding: 2rem;
+}
+
+.orientation-lock-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  animation: rotate-hint 2s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg); }
+  75% { transform: rotate(15deg); }
+}
+
+.orientation-lock-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.orientation-lock-subtext {
+  font-size: 1rem;
+  color: #888;
+}
+
+/* Show only on mobile (max-width 900px) AND portrait orientation */
+@media screen and (max-width: 900px) and (orientation: portrait) {
+  .orientation-lock {
+    display: flex;
+  }
+}
+
+/* Also hide main content when in portrait on mobile */
+@media screen and (max-width: 900px) and (orientation: portrait) {
+  .app-wrapper,
+  .home-menu,
+  .congkak-canvas-container {
+    display: none !important;
+  }
+}
