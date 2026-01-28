@@ -15,15 +15,17 @@ const OrientationLock = ({ children }) => {
       const isPortrait = height > width;
 
       if (isPortrait) {
-        // Phone is portrait - rotate content to landscape
+        // Phone is portrait - rotate content -90deg (counter-clockwise)
+        // So when user rotates phone clockwise to landscape, game appears normal
         setStyle({
           position: 'fixed',
           width: height + 'px',
           height: width + 'px',
-          transform: 'rotate(90deg)',
-          transformOrigin: 'top left',
-          left: width + 'px',
-          top: 0,
+          transform: 'rotate(-90deg)',
+          transformOrigin: 'top right',
+          top: height + 'px',
+          right: 0,
+          left: 'auto',
           overflow: 'hidden',
         });
       } else {
@@ -33,8 +35,10 @@ const OrientationLock = ({ children }) => {
           width: width + 'px',
           height: height + 'px',
           transform: 'none',
+          transformOrigin: 'center',
           left: 0,
           top: 0,
+          right: 'auto',
           overflow: 'hidden',
         });
       }
@@ -44,7 +48,6 @@ const OrientationLock = ({ children }) => {
 
     window.addEventListener('resize', updateOrientation);
     window.addEventListener('orientationchange', () => {
-      // Delay to let browser finish rotating
       setTimeout(updateOrientation, 100);
     });
 
