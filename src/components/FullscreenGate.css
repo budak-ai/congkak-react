@@ -25,6 +25,36 @@
   margin-bottom: 0.75rem;
 }
 
+/* Rotate message */
+.fullscreen-gate-rotate-icon {
+  font-size: 4rem;
+  animation: tilt 1.5s ease-in-out infinite;
+}
+
+@keyframes tilt {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-20deg); }
+  75% { transform: rotate(20deg); }
+}
+
+.fullscreen-gate-rotate-arrow {
+  font-size: 3rem;
+  color: #c9a84c;
+  margin: 0.5rem 0;
+}
+
+.fullscreen-gate-rotate-text {
+  color: #EBEBD0;
+  font-size: 1.5rem;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.fullscreen-gate-rotate-hint {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 .fullscreen-gate-title {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 2rem;

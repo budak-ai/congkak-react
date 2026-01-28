@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import './FullscreenGate.css';
 
 /**
- * Blocks game until user enters fullscreen mode
- * Required for orientation lock on mobile
+ * Blocks game until in landscape orientation
+ * Also handles fullscreen for non-PWA mobile browsers
  */
 const FullscreenGate = ({ children }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
 
   useEffect(() => {
     // Check if mobile
@@ -26,13 +27,19 @@ const FullscreenGate = ({ children }) => {
       || document.referrer.includes('android-app://');
     setIsPWA(standalone);
 
+    // Check orientation
+    const checkOrientation = () => {
+      const portrait = window.innerHeight > window.innerWidth;
+      setIsPortrait(portrait);
+    };
+
     // Check fullscreen state
     const checkFullscreen = () => {
       const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
       setIsFullscreen(isFS);
 
-      // Lock orientation when entering fullscreen
-      if (isFS && mobile) {
+      // Lock orientation when entering fullscreen (Android)
+      if (isFS && mobile && !ios) {
         const screenObj = window.screen;
         if (screenObj.orientation && screenObj.orientation.lock) {
           screenObj.orientation.lock('landscape').catch(() => {});
@@ -40,11 +47,17 @@ const FullscreenGate = ({ children }) => {
       }
     };
 
+    checkOrientation();
     checkFullscreen();
+
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
     document.addEventListener('fullscreenchange', checkFullscreen);
     document.addEventListener('webkitfullscreenchange', checkFullscreen);
 
     return () => {
+      window.removeEventListener('resize', checkOrientation);
+      window.removeEventListener('orientationchange', checkOrientation);
       document.removeEventListener('fullscreenchange', checkFullscreen);
       document.removeEventListener('webkitfullscreenchange', checkFullscreen);
     };
@@ -63,12 +76,31 @@ const FullscreenGate = ({ children }) => {
     }
   };
 
-  // Desktop or PWA - no gate needed
-  if (!isMobile || isPWA) {
+  // Desktop - no gate needed
+  if (!isMobile) {
     return children;
   }
 
-  // Mobile browser - require fullscreen
+  // Mobile in portrait - show rotate message (even for PWA)
+  if (isPortrait) {
+    return (
+      <div className="fullscreen-gate">
+        <div className="fullscreen-gate-content">
+          <div className="fullscreen-gate-rotate-icon">📱</div>
+          <div className="fullscreen-gate-rotate-arrow">↻</div>
+          <h2 className="fullscreen-gate-rotate-text">Rotate to Landscape</h2>
+          <p className="fullscreen-gate-rotate-hint">Putar ke mod Landskap</p>
+        </div>
+      </div>
+    );
+  }
+
+  // PWA in landscape - good to go
+  if (isPWA) {
+    return children;
+  }
+
+  // Mobile browser in landscape but not fullscreen - prompt fullscreen
   if (!isFullscreen) {
     return (
       <div className="fullscreen-gate">
@@ -85,49 +117,29 @@ const FullscreenGate = ({ children }) => {
           
           {isIOS && (
             <div className="fullscreen-gate-ios-notice">
-              <p>iOS requires adding to Home Screen</p>
-              <p className="hint">iOS memerlukan tambah ke Skrin Utama</p>
+              <p>Add to Home Screen to play</p>
+              <p className="hint">Tambah ke Skrin Utama untuk main</p>
             </div>
           )}
 
           <div className="fullscreen-gate-instructions">
             <div className="fullscreen-gate-divider">
-              {isIOS ? 'How to Add to Home Screen' : 'Or add to Home Screen for best experience'}
+              {isIOS ? 'How to Add to Home Screen' : 'Or add to Home Screen'}
             </div>
             
             {isIOS ? (
               <ol className="fullscreen-gate-steps">
-                <li>Tap the <strong>Share</strong> button <span className="icon">⬆️</span></li>
-                <li>Scroll down, tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>"Add"</strong> in the top right</li>
-                <li>Open Congkak from your Home Screen</li>
+                <li>Tap <strong>Share</strong> <span className="icon">⬆️</span></li>
+                <li>Tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong></li>
               </ol>
             ) : (
               <ol className="fullscreen-gate-steps">
-                <li>Tap the <strong>⋮ menu</strong> (top right)</li>
-                <li>Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong></li>
-                <li>Tap <strong>"Add"</strong> to confirm</li>
-                <li>Open Congkak from your Home Screen</li>
+                <li>Tap <strong>⋮ menu</strong></li>
+                <li>Tap <strong>"Add to Home screen"</strong></li>
+                <li>Tap <strong>"Add"</strong></li>
               </ol>
             )}
-
-            <div className="fullscreen-gate-steps-bm">
-              {isIOS ? (
-                <ol>
-                  <li>Tekan butang <strong>Kongsi</strong> <span className="icon">⬆️</span></li>
-                  <li>Tatal ke bawah, tekan <strong>"Tambah ke Skrin Utama"</strong></li>
-                  <li>Tekan <strong>"Tambah"</strong></li>
-                  <li>Buka Congkak dari Skrin Utama</li>
-                </ol>
-              ) : (
-                <ol>
-                  <li>Tekan <strong>menu ⋮</strong> (kanan atas)</li>
-                  <li>Tekan <strong>"Tambah ke skrin utama"</strong></li>
-                  <li>Tekan <strong>"Tambah"</strong></li>
-                  <li>Buka Congkak dari Skrin Utama</li>
-                </ol>
-              )}
-            </div>
           </div>
         </div>
       </div>
