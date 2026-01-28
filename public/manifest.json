@@ -1,0 +1,21 @@
+{
+  "short_name": "Congkak",
+  "name": "Congkak - Traditional Malaysian Game",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "theme_color": "#1a1410",
+  "background_color": "#1a1410"
+}
