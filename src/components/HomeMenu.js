@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { t } from '../config/translations';
 import LanguageSelector from './LanguageSelector';
 import './HomeMenu.css';
+import { unlockAudio, playClick } from '../utils/sounds';
 
 const HomeMenu = ({ onPlay, onRules, onSettings, isOverlay = false, onClose }) => {
   const { language } = useLanguage();
@@ -15,6 +16,8 @@ const HomeMenu = ({ onPlay, onRules, onSettings, isOverlay = false, onClose }) =
   };
 
   const handlePlay = () => {
+    unlockAudio();
+    playClick();
     onPlay(selectedMode);
   };
 

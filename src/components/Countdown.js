@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Countdown.css';
+import { playCountdownTick, playCountdownGo } from '../utils/sounds';
 
 const Countdown = ({ onComplete, duration = 3 }) => {
   const [count, setCount] = useState(duration);
@@ -7,9 +8,11 @@ const Countdown = ({ onComplete, duration = 3 }) => {
 
   useEffect(() => {
     if (count > 0) {
+      playCountdownTick();
       const timer = setTimeout(() => setCount(count - 1), 1000);
       return () => clearTimeout(timer);
     } else if (count === 0 && !showGo) {
+      playCountdownGo();
       setShowGo(true);
       setTimeout(() => {
         onComplete();

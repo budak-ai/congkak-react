@@ -18,6 +18,7 @@ import MatchEndModal from './MatchEndModal';
 import ConcedeConfirmModal from './ConcedeConfirmModal';
 import { validateSeedCount } from '../utils/seedValidator';
 import { useSeedEventLog } from '../hooks/useSeedEventLog';
+import { unlockAudio, playSeedDrop, playHouseDrop, playPickup, playCapture, playWin } from '../utils/sounds';
 import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 import CongkakCanvas from './three/CongkakCanvas';
@@ -348,6 +349,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
 
   // Start button click handler
   const handleStartClick = () => {
+    unlockAudio();
     setShowStartButton(false);
     setShowCountdown(true);
     setCountdownKey(prev => prev + 1); // Ensure fresh countdown
@@ -516,6 +518,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       setMatchEndReason('domination');
       setMatchEnded(true);
       setGamePhase(MATCH_END);
+      playWin();
       return;
     }
     if (lowerResult.newBurned.every(b => b)) {
@@ -523,6 +526,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       setMatchEndReason('domination');
       setMatchEnded(true);
       setGamePhase(MATCH_END);
+      playWin();
       return;
     }
 
@@ -613,6 +617,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     setMatchEndReason('voluntary');
     setMatchEnded(true);
     setGamePhase(MATCH_END);
+    playWin();
   };
 
   // Traditional mode: Show concede confirmation
@@ -628,6 +633,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       setMatchEndReason('concession');
       setMatchEnded(true);
       setGamePhase(MATCH_END);
+      playWin();
     }
     setConcedeConfirmPlayer(null);
   };
@@ -639,6 +645,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
 
   // Define the handlers for the mobile buttons
   const handleSButtonPress = async (index) => {
+    unlockAudio();
     // Block input when paused
     if (gamePausedRef.current) return;
     // Cannot select burned hole in traditional mode
@@ -671,6 +678,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   };
 
   const handleArrowDownPress = async (index) => {
+    unlockAudio();
     // Block input when paused
     if (gamePausedRef.current) return;
     // Cannot select burned hole in traditional mode
@@ -851,6 +859,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   useEffect(() => {
 
     const handleKeyDown = (event) => {
+      unlockAudio();
       // Block all keyboard input when paused
       if (gamePausedRef.current) return;
 
@@ -941,6 +950,11 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       }
     }
   }, [isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, gameMode, isGameOver, matchEnded]);
+
+  // Play win sound on game over
+  useEffect(() => {
+    if (isGameOver) playWin();
+  }, [isGameOver]);
 
   // Skip turn if player has no available moves
   useEffect(() => {
@@ -1042,6 +1056,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     }
     const totalAfterPickup = newSeeds.reduce((a, b) => a + b, 0) + topHouseSeedsRef.current + lowHouseSeedsRef.current + seedsInHand;
     console.log(`[SEEDS] Pickup from hole ${index} | inHand: ${seedsInHand} | total: ${totalAfterPickup}`);
+    playPickup();
 
     // Pick up animation - also track initial sowing position
     mySowingPositionRef.current = currentIndex;
@@ -1072,6 +1087,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         const newHouseValue = getHouseSeedsRef.current + 1;
         updateHouseSeeds(newHouseValue);
         console.log(`[SEEDS] Drop in ${isUpperPlayer ? 'UPPER' : 'LOWER'} house | house now: ${newHouseValue}`);
+        playHouseDrop();
 
         // Transfer one color from hand to house
         const handColors = [...getColorsInHandRef.current];
@@ -1146,6 +1162,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
       newSeeds[currentIndex]++;
       updateSeeds(newSeeds);
       console.log(`[SEEDS] Drop at hole ${currentIndex} | hole now: ${newSeeds[currentIndex]} | inHand: ${seedsInHand - 1}`);
+      playSeedDrop();
 
       // Transfer one color from hand to hole
       const handColorsForHole = [...getColorsInHandRef.current];
@@ -1176,6 +1193,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         newSeeds[currentIndex] = 0;
         updateSeeds(newSeeds);
         console.log(`[SEEDS] Continue: pickup from hole ${currentIndex} | inHand: ${seedsInHand}`);
+        playPickup();
 
         // Pick up colors from the hole into hand for continue sowing
         const newSeedColorsContinue = [...seedColorsRef.current.map(arr => [...arr])];
@@ -1260,6 +1278,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         newSeeds[oppositeIndex] = 0;
         updateSeeds(newSeeds);
         console.log(`[SEEDS] Capture: pickup opposite hole ${oppositeIndex} | total captured: ${capturedSeeds}`);
+        playCapture();
 
         // Pick up colors from opposite hole and add to hand
         const newSeedColorsCapture2 = [...seedColorsRef.current.map(arr => [...arr])];
@@ -1280,6 +1299,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         const newHouseValueAfterCapture = getHouseSeedsRef.current + capturedSeeds;
         updateHouseSeeds(newHouseValueAfterCapture);
         console.log(`[SEEDS] Captured ${capturedSeeds} to ${isUpperPlayer ? 'UPPER' : 'LOWER'} house | house now: ${newHouseValueAfterCapture}`);
+        playHouseDrop();
 
         // Transfer all captured colors from hand to house
         const capturedColorsToHouse = [...getColorsInHandRef.current];
