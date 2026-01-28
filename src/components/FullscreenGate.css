@@ -9,31 +9,34 @@
   justify-content: center;
   align-items: center;
   z-index: 10000;
+  overflow-y: auto;
+  padding: 1rem;
 }
 
 .fullscreen-gate-content {
   text-align: center;
-  padding: 2rem;
-  max-width: 90vw;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
 }
 
 .fullscreen-gate-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
 }
 
 .fullscreen-gate-title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: #c9a84c;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: 0.2em;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: 0.15em;
 }
 
 .fullscreen-gate-subtitle {
   color: #888;
-  font-size: 0.9rem;
-  margin: 0 0 2rem 0;
+  font-size: 0.8rem;
+  margin: 0 0 1.5rem 0;
   letter-spacing: 0.1em;
 }
 
@@ -48,6 +51,7 @@
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 15px rgba(77, 106, 43, 0.3);
+  margin-bottom: 1rem;
 }
 
 .fullscreen-gate-btn:hover {
@@ -59,31 +63,79 @@
   transform: translateY(0);
 }
 
-.fullscreen-gate-alt {
-  color: #666;
-  font-size: 0.85rem;
-  margin-top: 0.75rem;
+.fullscreen-gate-ios-notice {
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
 }
 
-.fullscreen-gate-pwa {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+.fullscreen-gate-ios-notice p {
+  color: #c9a84c;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.fullscreen-gate-ios-notice .hint {
+  color: #998050;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.fullscreen-gate-instructions {
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid #333;
 }
 
 .fullscreen-gate-divider {
-  color: #555;
-  font-size: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.fullscreen-gate-pwa p {
-  color: #777;
+  color: #888;
   font-size: 0.85rem;
-  margin: 0.25rem 0;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
 
-.fullscreen-gate-pwa-hint {
-  color: #555 !important;
-  font-size: 0.75rem !important;
+.fullscreen-gate-steps {
+  text-align: left;
+  color: #bbb;
+  font-size: 0.9rem;
+  padding-left: 1.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.fullscreen-gate-steps li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.fullscreen-gate-steps strong {
+  color: #EBEBD0;
+}
+
+.fullscreen-gate-steps .icon {
+  font-size: 0.9em;
+}
+
+.fullscreen-gate-steps-bm {
+  border-top: 1px dashed #333;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.fullscreen-gate-steps-bm ol {
+  text-align: left;
+  color: #777;
+  font-size: 0.8rem;
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.fullscreen-gate-steps-bm li {
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.fullscreen-gate-steps-bm strong {
+  color: #999;
 }
