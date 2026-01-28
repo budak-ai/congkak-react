@@ -1,171 +1,27 @@
-.fullscreen-gate {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #1a1410 0%, #2d2418 100%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  overflow-y: auto;
-  padding: 1rem;
+/* Force landscape orientation via CSS rotation */
+/* When phone is in portrait, rotate entire app 90 degrees */
+
+@media screen and (orientation: portrait) {
+  html, body {
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  #root {
+    position: fixed;
+    width: 100vh;
+    height: 100vw;
+    transform: rotate(90deg);
+    transform-origin: bottom left;
+    top: -100vw;
+    left: 0;
+    overflow: hidden;
+  }
 }
 
-.fullscreen-gate-content {
-  text-align: center;
-  padding: 1.5rem;
-  max-width: 400px;
-  width: 100%;
-}
-
-.fullscreen-gate-icon {
-  font-size: 3rem;
-  margin-bottom: 0.75rem;
-}
-
-/* Rotate message */
-.fullscreen-gate-rotate-icon {
-  font-size: 4rem;
-  animation: tilt 1.5s ease-in-out infinite;
-}
-
-@keyframes tilt {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-20deg); }
-  75% { transform: rotate(20deg); }
-}
-
-.fullscreen-gate-rotate-arrow {
-  font-size: 3rem;
-  color: #c9a84c;
-  margin: 0.5rem 0;
-}
-
-.fullscreen-gate-rotate-text {
-  color: #EBEBD0;
-  font-size: 1.5rem;
-  margin: 0.5rem 0 0.25rem 0;
-}
-
-.fullscreen-gate-rotate-hint {
-  color: #888;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.fullscreen-gate-title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 2rem;
-  color: #c9a84c;
-  margin: 0 0 0.25rem 0;
-  letter-spacing: 0.15em;
-}
-
-.fullscreen-gate-subtitle {
-  color: #888;
-  font-size: 0.8rem;
-  margin: 0 0 1.5rem 0;
-  letter-spacing: 0.1em;
-}
-
-.fullscreen-gate-btn {
-  background: linear-gradient(135deg, #4d6a2b, #5d7a3b);
-  color: #EBEBD0;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 15px rgba(77, 106, 43, 0.3);
-  margin-bottom: 1rem;
-}
-
-.fullscreen-gate-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(77, 106, 43, 0.4);
-}
-
-.fullscreen-gate-btn:active {
-  transform: translateY(0);
-}
-
-.fullscreen-gate-ios-notice {
-  background: rgba(201, 168, 76, 0.1);
-  border: 1px solid rgba(201, 168, 76, 0.3);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.fullscreen-gate-ios-notice p {
-  color: #c9a84c;
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.fullscreen-gate-ios-notice .hint {
-  color: #998050;
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-}
-
-.fullscreen-gate-instructions {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #333;
-}
-
-.fullscreen-gate-divider {
-  color: #888;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  font-weight: 500;
-}
-
-.fullscreen-gate-steps {
-  text-align: left;
-  color: #bbb;
-  font-size: 0.9rem;
-  padding-left: 1.5rem;
-  margin: 0 0 1rem 0;
-}
-
-.fullscreen-gate-steps li {
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.fullscreen-gate-steps strong {
-  color: #EBEBD0;
-}
-
-.fullscreen-gate-steps .icon {
-  font-size: 0.9em;
-}
-
-.fullscreen-gate-steps-bm {
-  border-top: 1px dashed #333;
-  padding-top: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.fullscreen-gate-steps-bm ol {
-  text-align: left;
-  color: #777;
-  font-size: 0.8rem;
-  padding-left: 1.5rem;
-  margin: 0;
-}
-
-.fullscreen-gate-steps-bm li {
-  margin-bottom: 0.35rem;
-  line-height: 1.3;
-}
-
-.fullscreen-gate-steps-bm strong {
-  color: #999;
+/* Ensure no scrolling in landscape either */
+@media screen and (orientation: landscape) {
+  html, body {
+    overflow: hidden;
+  }
 }
