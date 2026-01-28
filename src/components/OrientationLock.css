@@ -1,22 +1,28 @@
 /* Force landscape on mobile by rotating content in portrait mode */
-@media screen and (max-width: 900px) and (orientation: portrait) {
-  /* Rotate the entire app 90 degrees */
-  #root {
-    transform: rotate(90deg);
-    transform-origin: left top;
-    width: 100vh;
-    height: 100vw;
+@media screen and (max-width: 932px) and (orientation: portrait) {
+  html {
     overflow: hidden;
-    position: absolute;
-    top: 100%;
-    left: 0;
   }
 
-  /* Adjust body */
   body {
     overflow: hidden;
     position: fixed;
     width: 100%;
     height: 100%;
+  }
+
+  #root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    /* Swap width and height */
+    width: 100vh;
+    height: 100vw;
+    /* Rotate and reposition */
+    transform: rotate(90deg);
+    transform-origin: top left;
+    /* Move into view after rotation */
+    left: 100vw;
+    overflow: hidden;
   }
 }
