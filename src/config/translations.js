@@ -11,11 +11,11 @@ const translations = {
   // Game UI
   'game.start': { EN: 'START', BM: 'MULA' },
   'game.restart': { EN: 'RESTART', BM: 'ULANG' },
-  'game.upperTurn': { EN: "DARK's TURN", BM: 'GILIRAN GELAP' },
-  'game.lowerTurn': { EN: "WHITE's TURN", BM: 'GILIRAN PUTIH' },
+  'game.upperTurn': { EN: "P1's TURN", BM: 'GILIRAN P1' },
+  'game.lowerTurn': { EN: "P2's TURN", BM: 'GILIRAN P2' },
   'game.bothTurn': { EN: 'BOTH TURN', BM: 'GILIRAN KEDUA' },
-  'game.darkWins': { EN: 'DARK WINS', BM: 'GELAP MENANG' },
-  'game.whiteWins': { EN: 'WHITE WINS', BM: 'PUTIH MENANG' },
+  'game.darkWins': { EN: 'P1 WINS', BM: 'P1 MENANG' },
+  'game.whiteWins': { EN: 'P2 WINS', BM: 'P2 MENANG' },
   'game.draw': { EN: 'DRAW', BM: 'SERI' },
   'game.freeplay': { EN: 'FREEPLAY', BM: 'MAIN BEBAS' },
   'game.turnBased': { EN: 'TURN-BASED', BM: 'BERGILIR' },
@@ -31,12 +31,12 @@ const translations = {
     BM: 'Selepas undur detik, kedua-dua pemain boleh mula menabur dari mana-mana lubang di sisi mereka.'
   },
   'rules.upperControls': {
-    EN: 'Player DARK uses WASD keys',
-    BM: 'Pemain GELAP menggunakan kekunci WASD'
+    EN: 'P1 uses WASD keys',
+    BM: 'P1 menggunakan kekunci WASD'
   },
   'rules.lowerControls': {
-    EN: 'Player WHITE uses ARROW keys',
-    BM: 'Pemain PUTIH menggunakan kekunci ANAK PANAH'
+    EN: 'P2 uses ARROW keys',
+    BM: 'P2 menggunakan kekunci ANAK PANAH'
   },
   'rules.sowingBasic': {
     EN: 'When you select a hole, you pick up all seeds and drop one in each subsequent hole (counter-clockwise).',
@@ -68,8 +68,8 @@ const translations = {
   'round.end': { EN: 'Round Complete', BM: 'Pusingan Selesai' },
   'round.continue': { EN: 'Continue', BM: 'Teruskan' },
   'round.endMatch': { EN: 'End Match', BM: 'Tamat Perlawanan' },
-  'round.upperSeeds': { EN: 'Dark Seeds', BM: 'Biji Gelap' },
-  'round.lowerSeeds': { EN: 'White Seeds', BM: 'Biji Putih' },
+  'round.upperSeeds': { EN: 'P1 Seeds', BM: 'Biji P1' },
+  'round.lowerSeeds': { EN: 'P2 Seeds', BM: 'Biji P2' },
   'round.number': { EN: 'Round', BM: 'Pusingan' },
 
   // Match end (Traditional mode)
