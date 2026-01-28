@@ -1457,14 +1457,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
         </button>
       )}
 
-      {/* Seed Dancing Toggle */}
-      <button
-        className={`dancing-toggle ${seedDancingEnabled ? 'active' : ''}`}
-        onClick={() => setSeedDancingEnabled(!seedDancingEnabled)}
-        title={seedDancingEnabled ? 'Disable seed dancing' : 'Enable seed dancing'}
-      >
-        <i className="fa fa-music"></i>
-      </button>
+      {/* Seed Dancing Toggle — hidden, always enabled */}
 
       {/* Language Selector */}
       <LanguageSelector />
