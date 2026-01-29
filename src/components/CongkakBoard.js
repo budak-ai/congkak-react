@@ -1565,14 +1565,10 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
       <InfoModal isOpen={isModalOpen} toggleModal={toggleModal} />
       <div className='game-info'>
         <div className="current-turn">
-          <strong>{
-            (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? `${t('game.freeplay', language)}: ` :
-            `${t('game.turnBased', language)}: `
-          }</strong>
           <span>{
-            (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? t('game.bothTurn', language) :
+            (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? t('game.simultaneous', language) :
             vsAI && currentTurn === PLAYER_UPPER ? (isSowingUpper ? t('game.aiMoving', language) : (aiThinking ? t('game.aiThinking', language) : t('game.aiTurn', language))) :
-            currentTurn === PLAYER_UPPER ? t('game.upperTurn', language) : t('game.lowerTurn', language)
+            currentTurn === PLAYER_UPPER ? t('game.p1Move', language) : t('game.p2Move', language)
           }</span>
         </div>
         {vsAI && (
