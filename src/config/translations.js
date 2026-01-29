@@ -91,6 +91,7 @@ const translations = {
   'menu.hard': { EN: 'Hard', BM: 'Sukar' },
   'game.aiTurn': { EN: "AI's TURN", BM: 'GILIRAN AI' },
   'game.aiThinking': { EN: 'AI Thinking...', BM: 'AI Berfikir...' },
+  'game.aiMoving': { EN: 'AI Move', BM: 'AI Bergerak' },
   'game.youWin': { EN: 'YOU WIN!', BM: 'ANDA MENANG!' },
   'game.aiWins': { EN: 'AI WINS!', BM: 'AI MENANG!' },
 };

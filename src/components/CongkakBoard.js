@@ -673,6 +673,11 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
     unlockAudio();
     // Block input when paused
     if (gamePausedRef.current) return;
+    // Block human input on AI's side when playing vs AI
+    if (vsAI) {
+      console.log('[INPUT] Blocked: Cannot control AI side in VS AI mode');
+      return;
+    }
     // Cannot select burned hole in traditional mode
     if (gameMode === 'traditional' && isHoleBurned(index)) {
       handleWrongSelection(setShakeCursorUpper, setShowSelectionMessage);
@@ -892,7 +897,8 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
       let newIndexLower = currentHoleIndexLower;
 
       // Handle PlayerUpper's left and right movement
-      if (!isSowingUpper) {
+      // Block keyboard control for AI player when in VS AI mode
+      if (!isSowingUpper && !vsAI) {
         if (event.key === 'a' || event.key === 'A') {
           newIndexUpper = Math.max(0, currentHoleIndexUpper - 1); // decrease
           // Skip burned holes in traditional mode
@@ -959,7 +965,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };    
-  }, [currentHoleIndexUpper, currentHoleIndexLower, holeRefs, verticalPosUpper, verticalPosLower, isSowingUpper, isSowingLower, gamePhase]);
+  }, [currentHoleIndexUpper, currentHoleIndexLower, holeRefs, verticalPosUpper, verticalPosLower, isSowingUpper, isSowingLower, gamePhase, vsAI]);
 
   // GameOver Checker
   useEffect(() => {
@@ -1025,12 +1031,14 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
     // Don't run if AI is already thinking
     if (aiThinkingRef.current) return;
     
-    // Only run in turn-based select phase when it's AI's turn (upper player)
-    if (gamePhase !== TURN_BASED_SELECT) return;
-    if (currentTurn !== PLAYER_UPPER) return;
+    // Don't run if game is over or AI is sowing
+    if (isGameOver || matchEnded || isSowingUpper) return;
     
-    // Don't run if game is over or sowing
-    if (isGameOver || matchEnded || isSowingUpper || isSowingLower) return;
+    // Check game phase - AI can play in FREEPLAY or TURN_BASED_SELECT
+    const canPlayInFreeplay = gamePhase === FREEPLAY && !freeplayWaitingUpper;
+    const canPlayInTurnBased = gamePhase === TURN_BASED_SELECT && currentTurn === PLAYER_UPPER;
+    
+    if (!canPlayInFreeplay && !canPlayInTurnBased) return;
     
     // Check if AI has valid moves
     const aiHasMoves = gameMode === 'traditional' 
@@ -1059,8 +1067,10 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
           await updateCursorPositionUpper(holeRefs, aiMoveIndex, verticalPosUpper);
           setCurrentHoleIndexUpper(aiMoveIndex);
           
-          // Execute the move
-          setGamePhase(TURN_BASED_SOWING);
+          // Execute the move (keep current phase for freeplay, set sowing for turn-based)
+          if (gamePhase === TURN_BASED_SELECT) {
+            setGamePhase(TURN_BASED_SOWING);
+          }
           await sowing(aiMoveIndex, PLAYER_UPPER);
         }
       } catch (error) {
@@ -1074,7 +1084,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
     // Small delay before AI moves for better UX
     const timeoutId = setTimeout(executeAIMove, 500);
     return () => clearTimeout(timeoutId);
-  }, [vsAI, gamePhase, currentTurn, isGameOver, matchEnded, isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, aiDifficulty, gameMode, burnedHolesUpper]);
+  }, [vsAI, gamePhase, currentTurn, isGameOver, matchEnded, isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, aiDifficulty, gameMode, burnedHolesUpper, freeplayWaitingUpper]);
 
 /**==============================================
  *        SOWING LOGIC
@@ -1561,7 +1571,7 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficul
           }</strong>
           <span>{
             (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? t('game.bothTurn', language) :
-            vsAI && currentTurn === PLAYER_UPPER ? (aiThinking ? t('game.aiThinking', language) : t('game.aiTurn', language)) :
+            vsAI && currentTurn === PLAYER_UPPER ? (isSowingUpper ? t('game.aiMoving', language) : (aiThinking ? t('game.aiThinking', language) : t('game.aiTurn', language))) :
             currentTurn === PLAYER_UPPER ? t('game.upperTurn', language) : t('game.lowerTurn', language)
           }</span>
         </div>
