@@ -1,8 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import threeConfig from '../../config/threeConfig';
 import HoleRenderer from './HoleRenderer';
 import SeedRenderer from './SeedRenderer';
 import Hand3D from './Hand3D';
+
+/**
+ * Check if device is in portrait orientation
+ */
+const useIsPortrait = () => {
+  const [isPortrait, setIsPortrait] = useState(
+    window.matchMedia('(orientation: portrait)').matches
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(orientation: portrait)');
+    const handler = (e) => setIsPortrait(e.matches);
+    
+    // Modern API
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handler);
+    } else {
+      // Fallback for older browsers
+      mediaQuery.addListener(handler);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handler);
+      } else {
+        mediaQuery.removeListener(handler);
+      }
+    };
+  }, []);
+
+  return isPortrait;
+};
 
 /**
  * Scene component - sets up lighting and contains all 3D elements
@@ -39,10 +71,14 @@ const Scene = ({
   colorsInHandLower,
 }) => {
   const { lighting } = threeConfig;
-
+  const isPortrait = useIsPortrait();
+  
+  // Counter-rotation for portrait mode
+  // CSS rotates container +90° (π/2), so we rotate scene -90° (-π/2) around Y axis
+  const sceneRotation = isPortrait ? [0, -Math.PI / 2, 0] : [0, 0, 0];
 
   return (
-    <>
+    <group rotation={sceneRotation}>
       {/* Lighting */}
       <ambientLight intensity={lighting.ambient.intensity} />
       <directionalLight
@@ -102,7 +138,7 @@ const Scene = ({
         holeRadius={2.5}
         colorsInHand={colorsInHandLower}
       />
-    </>
+    </group>
   );
 };
 
