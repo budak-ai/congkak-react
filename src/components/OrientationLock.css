@@ -21,6 +21,10 @@ html, body {
   height: 100dvh; /* Mobile dynamic viewport */
   overflow: hidden;
   background: #1a1410;
+  /* Center content */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Portrait mode - rotate 90 degrees */
@@ -39,6 +43,11 @@ html, body {
     position: absolute;
     top: 0;
     left: 100vw;
+    
+    /* Center content */
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   
   /* Override fixed positioning for children in portrait */

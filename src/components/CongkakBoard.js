@@ -24,6 +24,25 @@ import gamePhaseConfig from '../config/gamePhaseConfig';
 import CongkakCanvas from './three/CongkakCanvas';
 import { clearHousePositionCache } from './three/Seed3D';
 
+/**
+ * Get effective screen dimensions accounting for orientation lock.
+ * In portrait mode, we CSS-rotate to landscape, so swap dimensions.
+ */
+const getEffectiveScreenDimensions = () => {
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  if (isPortrait) {
+    // In portrait, CSS rotates to landscape, so effective width is actual height
+    return {
+      width: window.innerHeight,
+      height: window.innerWidth
+    };
+  }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight
+  };
+};
+
 const {
   INIT_SEEDS_COUNT,
   HOLE_NUMBERS,
@@ -116,11 +135,13 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
   const [currentHoleIndexUpper, setCurrentHoleIndexUpper] = useState(startIndexUpper); 
   const [currentHoleIndexLower, setCurrentHoleIndexLower] = useState(startIndexLower);
 
-  const [cursorLeftUpper, setCursorLeftUpper] = useState(window.innerWidth / 2);
-  const [cursorTopUpper, setCursorTopUpper] = useState(window.innerHeight / 3);
+  // Use effective dimensions for initial cursor positions (accounts for orientation lock)
+  const initDims = getEffectiveScreenDimensions();
+  const [cursorLeftUpper, setCursorLeftUpper] = useState(initDims.width / 2);
+  const [cursorTopUpper, setCursorTopUpper] = useState(initDims.height / 3);
 
-  const [cursorLeftLower, setCursorLeftLower] = useState(window.innerWidth / 2);
-  const [cursorTopLower, setCursorTopLower] = useState(window.innerHeight * 2 / 4);
+  const [cursorLeftLower, setCursorLeftLower] = useState(initDims.width / 2);
+  const [cursorTopLower, setCursorTopLower] = useState(initDims.height * 2 / 3);
 
   const [resetCursor, setResetCursor] = useState(false);
   
