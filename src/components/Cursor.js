@@ -27,6 +27,20 @@ const Cursor = ({ color, shake, top, left, visible, canMove, disableTransition, 
     fontWeight: 'bold'
   };
 
+  const playerLabelStyle = {
+    position: 'absolute',
+    top: isTopTurn ? '85%' : '15%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    color: isTopTurn ? '#EBEBD0' : '#302E2B',
+    fontSize: '1.8vh',
+    fontWeight: 'bold',
+    textShadow: isTopTurn ? '1px 1px 2px rgba(0,0,0,0.5)' : '1px 1px 2px rgba(255,255,255,0.3)',
+    pointerEvents: 'none',
+  };
+
+  const playerLabel = isTopTurn ? 'P2' : 'P1';
+
   const shakeClass = shake ? (isTopTurn ? 'shake-animation-flipped' : 'shake-animation') : '';
   const pulseClass = canMove ? (isTopTurn ? 'pulse-glow-flipped' : 'pulse-glow') : '';
   const flippedClass = isTopTurn ? 'flipped' : '';
@@ -36,6 +50,7 @@ const Cursor = ({ color, shake, top, left, visible, canMove, disableTransition, 
     <div className={`hand-cursor ${flippedClass} ${shakeClass} ${pulseClass} ${transitionClass}`} style={cursorStyle}>
       {svgCursor}
       {seedCount >= 0 && <span className="seeds-count" style={seedCountStyle}>{seedCount}</span>}
+      <span className="player-label" style={playerLabelStyle}>{playerLabel}</span>
     </div>
   );
 };
