@@ -27,6 +27,27 @@
   margin-bottom: 0.5rem;
 }
 
+.match-end-score {
+  font-size: 3.5rem;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  color: #333;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.match-end-score span.winner {
+  color: #c9a84c;
+}
+
+.match-end-score-separator {
+  color: #666;
+  font-weight: normal;
+}
+
 .match-end-winner {
   font-size: 2.5rem;
   font-weight: bold;

@@ -62,8 +62,8 @@ const MatchEndModal = ({
   if (!isOpen) return null;
 
   const getWinnerText = () => {
-    if (winner === 'PLAYER_UPPER') return t('game.darkWins', language);
-    if (winner === 'PLAYER_LOWER') return t('game.whiteWins', language);
+    if (winner === 'PLAYER_UPPER') return t('game.p1Wins', language);
+    if (winner === 'PLAYER_LOWER') return t('game.p2Wins', language);
     return t('game.draw', language);
   };
 
@@ -79,24 +79,13 @@ const MatchEndModal = ({
   return (
     <div className="match-end-overlay">
       <div className="match-end-modal">
-        <div className="match-end-title">{t('match.winner', language)}</div>
+        <div className="match-end-score">
+          <span className={topIsWinner ? 'winner' : ''}>{animatedTopSeeds}</span>
+          <span className="match-end-score-separator">-</span>
+          <span className={lowIsWinner ? 'winner' : ''}>{animatedLowSeeds}</span>
+        </div>
         <div className="match-end-winner">{getWinnerText()}</div>
         {reason && <div className="match-end-reason">{getReasonText()}</div>}
-
-        <div className="match-end-stats">
-          <div className={`match-end-stat ${topIsWinner ? 'winner' : ''}`}>
-            <span className="match-end-stat-label">{t('round.upperSeeds', language)}</span>
-            <span className="match-end-stat-value counting">{animatedTopSeeds}</span>
-          </div>
-          <div className={`match-end-stat ${lowIsWinner ? 'winner' : ''}`}>
-            <span className="match-end-stat-label">{t('round.lowerSeeds', language)}</span>
-            <span className="match-end-stat-value counting">{animatedLowSeeds}</span>
-          </div>
-          <div className="match-end-stat">
-            <span className="match-end-stat-label">{t('round.number', language)}s</span>
-            <span className="match-end-stat-value">{roundsPlayed}</span>
-          </div>
-        </div>
 
         <div className="match-end-actions">
           <button className="match-end-btn match-end-btn--primary" onClick={onPlayAgain}>

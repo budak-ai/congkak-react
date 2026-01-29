@@ -17,6 +17,8 @@ const translations = {
   'game.simultaneous': { EN: 'Simultaneous move', BM: 'Giliran serentak' },
   'game.p1Move': { EN: 'P1 move', BM: 'Giliran P1' },
   'game.p2Move': { EN: 'P2 move', BM: 'Giliran P2' },
+  'game.p1Wins': { EN: 'P1 WINS', BM: 'P1 MENANG' },
+  'game.p2Wins': { EN: 'P2 WINS', BM: 'P2 MENANG' },
   'game.darkWins': { EN: 'P1 WINS', BM: 'P1 MENANG' },
   'game.whiteWins': { EN: 'P2 WINS', BM: 'P2 MENANG' },
   'game.draw': { EN: 'DRAW', BM: 'SERI' },
