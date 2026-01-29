@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import threeConfig from '../../config/threeConfig';
 import useScreenToWorld from '../../hooks/useScreenToWorld';
@@ -115,6 +116,19 @@ const Hand3D = ({
         <boxGeometry args={[0.6, 0.15, 0.7]} />
         <meshStandardMaterial color={handColor} roughness={0.6} />
       </mesh>
+
+      {/* Player label tattoo on the hand */}
+      <Text
+        position={[0, 0.08, 0]}
+        rotation={[-Math.PI / 2, 0, isUpper ? Math.PI : 0]}
+        fontSize={0.25}
+        color="#000000"
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+      >
+        {isUpper ? 'P2' : 'P1'}
+      </Text>
 
       {/* Thumb */}
       <mesh position={[-0.35, 0, -0.2]} rotation={[0, 0, 0.3]}>
