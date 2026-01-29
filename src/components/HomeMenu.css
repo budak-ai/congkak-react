@@ -245,6 +245,67 @@
   color: rgba(196, 155, 90, 0.7);
 }
 
+/* VS Mode Selection */
+.home-menu__vs-select {
+  margin-top: -0.5rem;
+}
+
+/* AI Difficulty Selection */
+.home-menu__difficulty-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  animation: fadeUp 0.5s ease-out both;
+}
+
+.home-menu__difficulty-label {
+  font-size: 0.75rem;
+  color: rgba(196, 155, 90, 0.4);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.home-menu__difficulty-buttons {
+  display: flex;
+  gap: 0;
+  border: 1px solid rgba(196, 155, 90, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.home-menu__diff-btn {
+  padding: 0.5rem 1.2rem;
+  background: transparent;
+  color: rgba(196, 155, 90, 0.35);
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.05em;
+}
+
+.home-menu__diff-btn + .home-menu__diff-btn {
+  border-left: 1px solid rgba(196, 155, 90, 0.12);
+}
+
+.home-menu__diff-btn:hover {
+  color: rgba(196, 155, 90, 0.6);
+  background: rgba(196, 155, 90, 0.04);
+}
+
+.home-menu__diff-btn--active {
+  background: rgba(168, 119, 55, 0.25);
+  color: #c4af6a;
+  font-weight: 600;
+}
+
+.home-menu__diff-btn--active:hover {
+  background: rgba(168, 119, 55, 0.3);
+  color: #c4af6a;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .home-menu__title {

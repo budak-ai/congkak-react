@@ -81,6 +81,18 @@ const translations = {
 
   // Concede
   'game.concede': { EN: 'Concede', BM: 'Mengalah' },
+
+  // AI Mode
+  'menu.vsHuman': { EN: 'vs Human', BM: 'vs Manusia' },
+  'menu.vsAI': { EN: 'vs AI', BM: 'vs AI' },
+  'menu.difficulty': { EN: 'Difficulty', BM: 'Kesukaran' },
+  'menu.easy': { EN: 'Easy', BM: 'Mudah' },
+  'menu.medium': { EN: 'Medium', BM: 'Sederhana' },
+  'menu.hard': { EN: 'Hard', BM: 'Sukar' },
+  'game.aiTurn': { EN: "AI's TURN", BM: 'GILIRAN AI' },
+  'game.aiThinking': { EN: 'AI Thinking...', BM: 'AI Berfikir...' },
+  'game.youWin': { EN: 'YOU WIN!', BM: 'ANDA MENANG!' },
+  'game.aiWins': { EN: 'AI WINS!', BM: 'AI MENANG!' },
 };
 
 export const t = (key, language) => {

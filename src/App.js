@@ -5,16 +5,21 @@ import SettingsModal from './components/SettingsModal';
 import InfoModal from './components/InfoModal';
 import OrientationLock from './components/OrientationLock';
 import { LanguageProvider } from './context/LanguageContext';
+import { AI_DIFFICULTY } from './ai/congkakAI';
 
 const App = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameMode, setGameMode] = useState('quick');
+  const [vsAI, setVsAI] = useState(false);
+  const [aiDifficulty, setAiDifficulty] = useState(AI_DIFFICULTY.MEDIUM);
   const [showMenuOverlay, setShowMenuOverlay] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const handlePlay = (mode) => {
+  const handlePlay = (mode, isVsAI = false, difficulty = AI_DIFFICULTY.MEDIUM) => {
     setGameMode(mode);
+    setVsAI(isVsAI);
+    setAiDifficulty(difficulty);
     setGameStarted(true);
     setShowMenuOverlay(false);
   };
@@ -41,7 +46,12 @@ const App = () => {
 
           {gameStarted && (
             <>
-              <CongkakBoard gameMode={gameMode} onMenuOpen={handleOpenMenu} />
+              <CongkakBoard 
+                gameMode={gameMode} 
+                onMenuOpen={handleOpenMenu}
+                vsAI={vsAI}
+                aiDifficulty={aiDifficulty}
+              />
 
               {showMenuOverlay && (
                 <HomeMenu

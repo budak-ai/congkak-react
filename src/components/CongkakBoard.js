@@ -23,6 +23,7 @@ import config from '../config/config';
 import gamePhaseConfig from '../config/gamePhaseConfig';
 import CongkakCanvas from './three/CongkakCanvas';
 import { clearHousePositionCache } from './three/Seed3D';
+import { getAIMoveAsync, AI_DIFFICULTY } from '../ai/congkakAI';
 
 /**
  * Get effective screen dimensions accounting for orientation lock.
@@ -68,8 +69,12 @@ const {
   MATCH_END
 } = gamePhaseConfig;
 
-const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
+const CongkakBoard = ({ gameMode = 'quick', onMenuOpen, vsAI = false, aiDifficulty = AI_DIFFICULTY.MEDIUM }) => {
   const { language } = useLanguage();
+  
+  // AI state
+  const [aiThinking, setAiThinking] = useState(false);
+  const aiThinkingRef = useRef(false);
 
   // Seed event logging for debugging
   const { eventLog, logVersion, logEvent, snapshot, clearLog } = useSeedEventLog();
@@ -1010,6 +1015,67 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
     }
   }, [seeds, currentTurn, isSowingUpper, isSowingLower, isGameOver, matchEnded, gameMode, burnedHolesUpper, burnedHolesLower, gamePhase]);
 
+  /**=========================================================
+  *                    AI Move Trigger
+  * ==========================================================*/
+  useEffect(() => {
+    // Only activate in VS AI mode
+    if (!vsAI) return;
+    
+    // Don't run if AI is already thinking
+    if (aiThinkingRef.current) return;
+    
+    // Only run in turn-based select phase when it's AI's turn (upper player)
+    if (gamePhase !== TURN_BASED_SELECT) return;
+    if (currentTurn !== PLAYER_UPPER) return;
+    
+    // Don't run if game is over or sowing
+    if (isGameOver || matchEnded || isSowingUpper || isSowingLower) return;
+    
+    // Check if AI has valid moves
+    const aiHasMoves = gameMode === 'traditional' 
+      ? hasAvailableMoves(seeds, PLAYER_UPPER, burnedHolesUpper)
+      : sumOfSeedsInCurrentRow(seeds, PLAYER_UPPER, config) > 0;
+    
+    if (!aiHasMoves) return;
+    
+    // Trigger AI move
+    const executeAIMove = async () => {
+      aiThinkingRef.current = true;
+      setAiThinking(true);
+      
+      try {
+        // Get AI's move
+        const aiMoveIndex = await getAIMoveAsync(
+          seeds,
+          topHouseSeeds,
+          lowHouseSeeds,
+          PLAYER_UPPER,
+          aiDifficulty
+        );
+        
+        if (aiMoveIndex !== null && !gamePausedRef.current && !resetRequestedRef.current) {
+          // Move cursor to the chosen hole
+          await updateCursorPositionUpper(holeRefs, aiMoveIndex, verticalPosUpper);
+          setCurrentHoleIndexUpper(aiMoveIndex);
+          
+          // Execute the move
+          setGamePhase(TURN_BASED_SOWING);
+          await sowing(aiMoveIndex, PLAYER_UPPER);
+        }
+      } catch (error) {
+        console.error('[AI] Error executing AI move:', error);
+      } finally {
+        aiThinkingRef.current = false;
+        setAiThinking(false);
+      }
+    };
+    
+    // Small delay before AI moves for better UX
+    const timeoutId = setTimeout(executeAIMove, 500);
+    return () => clearTimeout(timeoutId);
+  }, [vsAI, gamePhase, currentTurn, isGameOver, matchEnded, isSowingUpper, isSowingLower, seeds, topHouseSeeds, lowHouseSeeds, aiDifficulty, gameMode, burnedHolesUpper]);
+
 /**==============================================
  *        SOWING LOGIC
  * =============================================*/
@@ -1495,9 +1561,15 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
           }</strong>
           <span>{
             (gamePhase === COUNTDOWN || gamePhase === FREEPLAY) ? t('game.bothTurn', language) :
+            vsAI && currentTurn === PLAYER_UPPER ? (aiThinking ? t('game.aiThinking', language) : t('game.aiTurn', language)) :
             currentTurn === PLAYER_UPPER ? t('game.upperTurn', language) : t('game.lowerTurn', language)
           }</span>
         </div>
+        {vsAI && (
+          <div className="ai-mode-indicator">
+            VS AI ({aiDifficulty.toUpperCase()})
+          </div>
+        )}
       </div>
       <div className='game-area'>
         <div className="board-wrapper">
@@ -1617,7 +1689,11 @@ const CongkakBoard = ({ gameMode = 'quick', onMenuOpen }) => {
           </button>)}
           {isGameOver && (
             <div className="game-over-message">
-              {outcomeMessage}
+              {vsAI ? (
+                outcomeMessage === 'DARK WINS' ? t('game.aiWins', language) :
+                outcomeMessage === 'WHITE WINS' ? t('game.youWin', language) :
+                outcomeMessage
+              ) : outcomeMessage}
             </div>
           )}
         </div>

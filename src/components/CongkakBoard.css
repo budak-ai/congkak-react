@@ -517,3 +517,17 @@ body {
 .ghost-container .circle.burned .burned-overlay {
   opacity: 0;
 }
+
+/* AI Mode Indicator */
+.ai-mode-indicator {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 2px;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.current-turn span {
+  transition: opacity 0.3s ease;
+}
