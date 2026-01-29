@@ -2,68 +2,114 @@ import { useEffect, useState } from 'react';
 import './OrientationLock.css';
 
 /**
- * Simple orientation handler:
- * - Shows "rotate device" prompt when in portrait
- * - Lets app render naturally in landscape
- * - Tries to lock orientation via API on first interaction
+ * LOCKS game to ONE landscape orientation (home button on right).
+ * Counter-rotates the entire app when device rotates so the game NEVER moves.
+ * For 2-player game where players sit opposite each other.
  */
 const OrientationLock = ({ children }) => {
-  const [isPortrait, setIsPortrait] = useState(false);
+  const [transform, setTransform] = useState({});
 
   useEffect(() => {
-    const checkOrientation = () => {
-      // Check if portrait (height > width)
-      const portrait = window.innerHeight > window.innerWidth;
-      setIsPortrait(portrait);
-    };
-
-    // Try to lock orientation on user interaction
-    const tryLockOrientation = () => {
-      if (window.screen?.orientation?.lock) {
-        window.screen.orientation.lock('landscape').catch(() => {
-          // Orientation lock failed - CSS fallback handles it
-        });
+    const updateOrientation = () => {
+      // Get device orientation angle
+      let angle = 0;
+      if (window.screen?.orientation?.angle !== undefined) {
+        angle = window.screen.orientation.angle;
+      } else if (window.orientation !== undefined) {
+        angle = window.orientation;
       }
+
+      // Normalize to 0, 90, 180, 270
+      angle = ((angle % 360) + 360) % 360;
+
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Target: Always show as if device is in landscape (90°)
+      // We counter-rotate to cancel out device rotation
+
+      let rotation = 0;
+      let width = vw;
+      let height = vh;
+      let top = 0;
+      let left = 0;
+
+      if (angle === 0) {
+        // Portrait (normal) - rotate content 90° clockwise
+        rotation = 90;
+        width = vh;
+        height = vw;
+        left = vw;
+        top = 0;
+      } else if (angle === 90) {
+        // Landscape (home right) - this is our target, no rotation
+        rotation = 0;
+        width = vw;
+        height = vh;
+        left = 0;
+        top = 0;
+      } else if (angle === 180) {
+        // Portrait (upside down) - rotate -90° (counter-clockwise)
+        rotation = -90;
+        width = vh;
+        height = vw;
+        left = 0;
+        top = vh;
+      } else if (angle === 270) {
+        // Landscape (home left) - rotate 180°
+        rotation = 180;
+        width = vw;
+        height = vh;
+        left = vw;
+        top = vh;
+      }
+
+      setTransform({
+        position: 'fixed',
+        width: width + 'px',
+        height: height + 'px',
+        left: left + 'px',
+        top: top + 'px',
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: 'top left',
+        overflow: 'hidden',
+        background: '#1a1410',
+      });
     };
 
-    // Initial check
-    checkOrientation();
+    // Initial
+    updateOrientation();
 
-    // Listen for changes
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', () => {
-      // Delay check to let orientation settle
-      setTimeout(checkOrientation, 100);
-    });
-
-    // Lock on first interaction
-    const onInteraction = () => {
-      tryLockOrientation();
-      document.removeEventListener('touchstart', onInteraction);
-      document.removeEventListener('click', onInteraction);
+    // Listen for orientation changes
+    window.addEventListener('resize', updateOrientation);
+    
+    const onOrientationChange = () => {
+      // Multiple updates to catch the final state
+      updateOrientation();
+      setTimeout(updateOrientation, 50);
+      setTimeout(updateOrientation, 150);
+      setTimeout(updateOrientation, 300);
     };
-    document.addEventListener('touchstart', onInteraction, { once: true });
-    document.addEventListener('click', onInteraction, { once: true });
+    
+    window.addEventListener('orientationchange', onOrientationChange);
+    
+    if (window.screen?.orientation) {
+      window.screen.orientation.addEventListener('change', onOrientationChange);
+    }
 
     return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', onOrientationChange);
+      if (window.screen?.orientation) {
+        window.screen.orientation.removeEventListener('change', onOrientationChange);
+      }
     };
   }, []);
 
   return (
-    <>
-      {isPortrait && (
-        <div className="rotate-prompt">
-          <div className="rotate-prompt__icon">📱</div>
-          <h2 className="rotate-prompt__title">Rotate Your Device</h2>
-          <p className="rotate-prompt__text">Congkak is best played in landscape mode</p>
-        </div>
-      )}
-      <div className={`orientation-content ${isPortrait ? 'orientation-content--hidden' : ''}`}>
-        {children}
-      </div>
-    </>
+    <div className="orientation-lock" style={transform}>
+      {children}
+    </div>
   );
 };
 

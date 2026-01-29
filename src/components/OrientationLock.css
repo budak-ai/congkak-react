@@ -1,5 +1,5 @@
-/* Reset body */
-html, body {
+/* Reset */
+html, body, #root {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -8,56 +8,24 @@ html, body {
   background: #1a1410 !important;
 }
 
-/* Rotate device prompt */
-.rotate-prompt {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.orientation-lock {
   background: #1a1410;
-  z-index: 99999;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #e8d5b7;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  text-align: center;
-  padding: 2rem;
-  box-sizing: border-box;
 }
 
-.rotate-prompt__icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  animation: rotate-hint 2s ease-in-out infinite;
-}
-
-@keyframes rotate-hint {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-20deg); }
-  75% { transform: rotate(20deg); }
-}
-
-.rotate-prompt__title {
-  font-size: 1.5rem;
-  margin: 0 0 0.5rem 0;
-  color: #fff;
-}
-
-.rotate-prompt__text {
-  font-size: 1rem;
-  margin: 0;
-  opacity: 0.8;
-}
-
-/* Content wrapper */
-.orientation-content {
+/* Ensure children fill the space */
+.orientation-lock > * {
   width: 100%;
   height: 100%;
 }
 
-.orientation-content--hidden {
-  display: none;
+/* Fix for 3D canvas - must be inside the rotated container */
+.orientation-lock .congkak-canvas-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
