@@ -1,5 +1,11 @@
+/* 
+ * Pure CSS Orientation Lock
+ * Keeps game fixed in landscape orientation by rotating in portrait mode.
+ * Works on both iOS and Android.
+ */
+
 /* Reset */
-html, body, #root {
+html, body {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -8,24 +14,53 @@ html, body, #root {
   background: #1a1410 !important;
 }
 
-.orientation-lock {
+/* Default (landscape) - no transform needed */
+.orientation-lock-wrapper {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Mobile dynamic viewport */
+  overflow: hidden;
   background: #1a1410;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
-/* Ensure children fill the space */
-.orientation-lock > * {
-  width: 100%;
-  height: 100%;
+/* Portrait mode - rotate 90 degrees */
+@media screen and (orientation: portrait) {
+  .orientation-lock-wrapper {
+    /* Rotate 90° clockwise */
+    transform: rotate(90deg);
+    transform-origin: top left;
+    
+    /* Swap dimensions - width becomes viewport height, height becomes viewport width */
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    
+    /* Position after rotation - move right by original width */
+    position: absolute;
+    top: 0;
+    left: 100vw;
+  }
+  
+  /* Override fixed positioning for children in portrait */
+  .orientation-lock-wrapper .congkak-canvas-container {
+    /* Canvas should be absolute within the rotated wrapper, not fixed to viewport */
+    position: absolute !important;
+    width: 100% !important;
+    height: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
 }
 
-/* Fix for 3D canvas - must be inside the rotated container */
-.orientation-lock .congkak-canvas-container {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
+/* Landscape - ensure canvas uses rotated container dimensions */
+@media screen and (orientation: landscape) {
+  .orientation-lock-wrapper .congkak-canvas-container {
+    /* In landscape, fixed to viewport is fine since no rotation */
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    top: 0;
+    left: 0;
+  }
 }
